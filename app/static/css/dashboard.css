@@ -38,6 +38,13 @@ box-shadow: 0 8px 30px rgba(6,8,15,0.6); color:#eaf6ff; border-radius:12px; }
 /* 最近日志 */
 .recent-logs{ height:200px; overflow:auto; background:transparent; color:#cfeffd; white-space:pre-wrap; }
 
+/* 攻击详情表格（暗色风格） */
+#attackLogTable th{ color: rgba(234,246,255,0.82); font-size: 12px; }
+#attackLogTable td{ color: rgba(207,239,253,0.92); font-size: 12px; }
+#attackLogTable tbody tr:hover td{ background: rgba(107,193,255,0.06); }
+#attackLogTable thead th{ border-bottom: 1px solid rgba(255,255,255,0.06); }
+#attackLogTable tbody td{ border-bottom: 1px solid rgba(255,255,255,0.04); }
+
 /* 卡片入场动画 */
 .animated-card{ opacity:0; transform: translateY(18px) scale(0.995); transition: all 420ms cubic-bezier(.2,.9,.2,1); }
 .animated-card.visible{ opacity:1; transform: translateY(0) scale(1); }

@@ -739,20 +739,6 @@ Ethernet adapter Ethernet:
 
     @app.route('/attack_hub')
     def attack_hub():
-        try:
-            bundle_path = os.path.join(app.root_path, 'static', 'dashboard', 'dashboard.js')
-            if os.path.exists(bundle_path):
-                return render_template('attack_hub_vite.html')
-        except Exception:
-            pass
-        return render_template('attack_hub_react.html')
-
-    @app.route('/attack_hub_dev')
-    def attack_hub_dev():
-        return render_template('attack_hub_react.html')
-
-    @app.route('/attack_hub_legacy')
-    def attack_hub_legacy():
         return render_template('attack_hub.html')
 
     @app.route('/api/attack/stats')
@@ -765,6 +751,72 @@ Ethernet adapter Ethernet:
             'total': total,
             'blocked': blocked,
             'types': types
+        })
+
+    @app.route('/api/attack/type_breakdown')
+    def api_attack_type_breakdown():
+        rows = db.session.query(
+            AttackLog.attack_type,
+            db.func.count(AttackLog.id).label('cnt')
+        ).group_by(AttackLog.attack_type).order_by(db.desc('cnt')).all()
+        labels = []
+        data = []
+        for t, c in rows:
+            labels.append(t or 'unknown')
+            data.append(int(c))
+        return jsonify({"labels": labels, "data": data})
+
+    @app.route('/api/attack/logs')
+    def api_attack_logs():
+        limit = request.args.get('limit')
+        offset = request.args.get('offset')
+        attack_type = (request.args.get('type') or '').strip()
+        severity = (request.args.get('severity') or '').strip()
+        blocked = (request.args.get('blocked') or '').strip().lower()
+        ip = (request.args.get('ip') or '').strip()
+        search = (request.args.get('q') or '').strip()
+
+        try:
+            n = int(limit) if limit else 50
+        except Exception:
+            n = 50
+        try:
+            o = int(offset) if offset else 0
+        except Exception:
+            o = 0
+
+        n = max(1, min(n, 200))
+        o = max(0, o)
+
+        qset = AttackLog.query
+        if attack_type:
+            qset = qset.filter(AttackLog.attack_type == attack_type)
+        if severity:
+            qset = qset.filter(AttackLog.severity == severity)
+        if blocked in ('true', 'false'):
+            qset = qset.filter(AttackLog.blocked == (blocked == 'true'))
+        if ip:
+            qset = qset.filter(AttackLog.ip == ip)
+        if search:
+            qset = qset.filter(AttackLog.payload.ilike(f"%{search}%"))
+
+        rows = qset.order_by(AttackLog.timestamp.desc()).offset(o).limit(n).all()
+        return jsonify({
+            "logs": [
+                {
+                    "id": int(l.id),
+                    "ip": l.ip,
+                    "payload": l.payload,
+                    "time": l.timestamp.isoformat(),
+                    "blocked": bool(l.blocked),
+                    "attack_type": l.attack_type,
+                    "attack_category": l.attack_category,
+                    "severity": l.severity,
+                    "target_url": l.target_url,
+                    "user_agent": l.user_agent,
+                }
+                for l in rows
+            ]
         })
 
     @app.route('/api/dashboard/stats', methods=['GET'])
