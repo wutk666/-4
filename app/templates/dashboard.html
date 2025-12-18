@@ -72,8 +72,8 @@
 
     <div class="row">
       <div class="col-md-8">
-        <div class="card neon-card p-3 animated-card">
-          <h6>最近 14 天攻击趋势</h6>
+        <div class="card neon-card p-3 animated-card chart-panel panel-red">
+          <h6 class="chart-title">ATTACK TREND (14D)</h6>
           <canvas id="trendChart" height="160"></canvas>
         </div>
       </div>
@@ -105,8 +105,8 @@
           <canvas id="topIpChart" height="160"></canvas>
         </div>
 
-        <div class="card neon-card p-3 mt-3 animated-card">
-          <h6>攻击类型分布（点击钻取）</h6>
+        <div class="card neon-card p-3 mt-3 animated-card chart-panel panel-gold">
+          <h6 class="chart-title">ATTACK TYPES (CLICK TO DRILL DOWN)</h6>
           <canvas id="typeChart" height="160"></canvas>
           <div class="d-flex align-items-center justify-content-between mt-2">
             <div class="small text-muted">当前筛选：<span id="typeFilterLabel">无</span></div>

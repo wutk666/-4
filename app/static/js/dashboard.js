@@ -108,6 +108,7 @@
     const base = ['#ffd66b','#5ce0a0','#6bc1ff','#ff7bbf','#ff6b6b','#b88bff','#3ee7ff','#ffb86b'];
     const colors = [];
     const count = Math.max(0, Number(n || 0));
+
     for(let i=0;i<count;i++){
       if(i < base.length){
         colors.push(base[i]);
@@ -119,12 +120,47 @@
     return colors;
   }
 
+  function axisStyle(){
+    return {
+      ticks: { color: 'rgba(255,255,255,0.75)', font: { size: 10 } },
+      grid: { color: 'rgba(255,255,255,0.08)', drawBorder: false }
+    };
+  }
+
   function drawLine(ctx, labels, data){
       if(trendChart) trendChart.destroy();
       trendChart = new Chart(ctx, {
           type: 'line',
-          data: { labels, datasets:[{ label:'攻击次数', data, borderColor:'#ff6b6b', backgroundColor:'rgba(255,107,107,0.12)', tension:0.25, pointRadius:3 }]},
-          options: { responsive:true, plugins:{legend:{display:false}}, animation:{duration:800}}
+          data: {
+            labels,
+            datasets:[{
+              label:'攻击次数',
+              data,
+              borderColor:'#ff2d2d',
+              backgroundColor:'rgba(255,45,45,0.0)',
+              tension:0.25,
+              pointRadius:0,
+              borderWidth:2
+            }]
+          },
+          options: {
+            responsive:true,
+            plugins:{
+              legend:{display:false},
+              tooltip:{
+                backgroundColor:'rgba(0,0,0,0.75)',
+                borderColor:'rgba(255,45,45,0.25)',
+                borderWidth:1,
+                titleColor:'rgba(255,255,255,0.9)',
+                bodyColor:'rgba(255,255,255,0.85)'
+              }
+            },
+            animation:{duration:800},
+            scales:{
+              x: axisStyle(),
+              y: axisStyle()
+            }
+          }
       });
   }
 
@@ -140,14 +176,46 @@
   function drawPie(ctx, labels, data){
     if(typeChart) typeChart.destroy();
     typeChart = new Chart(ctx, {
-      type: 'pie',
-      data: { labels, datasets:[{ data, backgroundColor: genColors(Array.isArray(labels) ? labels.length : 0) }]},
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets:[{
+          data,
+          backgroundColor: genColors(Array.isArray(labels) ? labels.length : 0),
+          borderColor: 'rgba(0,0,0,0.35)',
+          borderWidth: 2,
+          hoverOffset: 8
+        }]
+      },
       options: {
         responsive:true,
+        cutout: '60%',
+        layout: { padding: { top: 6, left: 6, right: 6, bottom: 0 } },
+        plugins:{
+          legend:{
+            display:true,
+            position:'top',
+            labels:{
+              color:'rgba(255,255,255,0.78)',
+              boxWidth: 14,
+              boxHeight: 8,
+              padding: 10,
+              font: { size: 10 }
+            }
+          },
+          tooltip:{
+            backgroundColor:'rgba(0,0,0,0.75)',
+            borderColor:'rgba(255,196,0,0.25)',
+            borderWidth:1,
+            titleColor:'rgba(255,255,255,0.9)',
+            bodyColor:'rgba(255,255,255,0.85)'
+          }
+        },
         animation:{duration:700},
         onClick: (_evt, elements) => {
           try{
             if(!elements || !elements.length) return;
+
             const idx = elements[0].index;
             const label = typeChart?.data?.labels?.[idx];
             if(!label) return;

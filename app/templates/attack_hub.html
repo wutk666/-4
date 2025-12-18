@@ -7,309 +7,627 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <style>
-    body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    @import "https://fonts.googleapis.com/css2?family=Creepster&family=Roboto+Mono:wght@400;700&display=swap";
+
+    :root{
+      --bg: #07060a;
+      --panel: rgba(0,0,0,0.62);
+      --panel2: rgba(0,0,0,0.42);
+      --text: rgba(255,255,255,0.88);
+      --muted: rgba(255,255,255,0.58);
+      --red: rgba(255,45,45,0.95);
+      --gold: rgba(255,196,0,0.95);
+      --cyan: rgba(0,214,255,0.92);
+    }
+
+    body{
+      margin: 0;
+      background:
+        radial-gradient(900px 460px at 15% 0%, rgba(255,45,45,0.12), transparent 60%),
+        radial-gradient(900px 460px at 85% 60%, rgba(0,214,255,0.10), transparent 60%),
+        radial-gradient(1100px 620px at 60% 100%, rgba(255,196,0,0.10), transparent 60%),
+        var(--bg);
       min-height: 100vh;
-      padding: 20px;
+      color: var(--text);
+      font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      padding: 18px 18px 90px;
+      overflow-x: hidden;
     }
-    .category-section {
-      background: rgba(255,255,255,0.95);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    }
-    .category-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #e9ecef;
-    }
-    .category-icon {
-      font-size: 32px;
-      margin-right: 12px;
-    }
-    .attack-card {
-      background: #fff;
-      border: 2px solid #e9ecef;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-      transition: all 0.3s;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-    .attack-card:hover {
-      border-color: #667eea;
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(102,126,234,0.2);
-    }
-    .attack-card::before {
-      content: '';
-      position: absolute;
+
+    .bg-fog{
+      position: fixed;
       top: 0;
       left: 0;
-      width: 4px;
+      width: 200%;
       height: 100%;
-      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      background: url(https://www.transparenttextures.com/patterns/foggy-birds.png);
+      opacity: 0.15;
+      z-index: 0;
+      animation: drift 60s linear infinite alternate;
+      pointer-events: none;
+      transform: translate(calc(var(--mx, 0) * 10px), calc(var(--my, 0) * 8px));
+      will-change: transform;
     }
-    .attack-card h4 {
-      margin: 0 0 8px 0;
-      color: #333;
-      font-size: 18px;
+
+    @keyframes drift{ 0%{ transform: translate(0,0); } 100%{ transform: translate(-50%,0); } }
+
+    .bg-overlay{
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: radial-gradient(circle at center, transparent 0%, rgba(139,0,0,0.20) 60%, rgba(0,0,0,0.92) 100%);
+      z-index: 0;
+      pointer-events: none;
     }
-    .attack-card p {
-      margin: 0;
-      color: #6c757d;
-      font-size: 14px;
+
+    .topbar,
+    .stats,
+    .hub-wrap,
+    .music{
+      position: relative;
+      z-index: 1;
     }
-    .severity-badge {
+
+    .hub-wrap{ max-width: 1120px; margin: 0 auto; }
+
+    .hub-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 16px;
+      border-radius: 14px;
+      padding: 18px 18px;
+      margin: 14px 0;
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    }
+
+    .hub-row::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      border-radius: 14px;
+      padding:1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events:none;
+      opacity: 0.8;
+    }
+
+    .hub-row.hub-red{ box-shadow: 0 0 0 1px rgba(255,45,45,0.16) inset, 0 0 26px rgba(255,45,45,0.12); }
+    .hub-row.hub-gold{ box-shadow: 0 0 0 1px rgba(255,196,0,0.16) inset, 0 0 26px rgba(255,196,0,0.12); }
+    .hub-row.hub-cyan{ box-shadow: 0 0 0 1px rgba(0,214,255,0.16) inset, 0 0 26px rgba(0,214,255,0.12); }
+
+    .hub-row.hub-red{ border: 1px solid rgba(255,45,45,0.35); }
+    .hub-row.hub-gold{ border: 1px solid rgba(255,196,0,0.35); }
+    .hub-row.hub-cyan{ border: 1px solid rgba(0,214,255,0.35); }
+
+    .hub-left{ display:flex; align-items:center; gap: 14px; min-width: 320px; }
+    .hub-icon{
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+      flex: 0 0 auto;
+    }
+    .hub-icon i{ font-size: 28px; color: rgba(255,255,255,0.82); }
+
+    .hub-titles{ line-height: 1.1; }
+    .hub-title{ font-size: 18px; font-weight: 700; letter-spacing: 0.2px; margin:0; }
+    .hub-sub{ font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+
+    .hub-items{ display:flex; align-items:center; gap: 26px; flex-wrap: wrap; justify-content: flex-end; }
+    .hub-item{ text-align:center; width: 96px; }
+    .hub-dot{
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(0,0,0,0.35);
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.35) inset;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease;
+    }
+    .hub-dot::after{ content:""; width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.75); box-shadow: 0 0 12px rgba(255,255,255,0.25); }
+    .hub-dot:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,0.42); }
+    .hub-item-label{ font-size: 11px; letter-spacing: 1.1px; text-transform: uppercase; color: rgba(255,255,255,0.72); }
+
+    .hub-dot.disabled{ cursor:not-allowed; opacity: 0.35; }
+    .hub-dot.disabled:hover{ transform:none; border-color: rgba(255,255,255,0.22); }
+
+    .topbar{ max-width: 1120px; margin: 0 auto 14px; display:flex; align-items:flex-start; justify-content:space-between; gap: 16px; }
+    .brand{ padding-top: 4px; }
+    .brand-kicker{ font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.70); }
+    .brand-title{ font-size: 44px; font-weight: 900; letter-spacing: 2px; margin: 6px 0 6px; color: rgba(255,255,255,0.92); text-shadow: 0 0 18px rgba(255,0,0,0.25), 0 14px 40px rgba(0,0,0,0.7); }
+    .brand-sub{ font-size: 12px; letter-spacing: 0.6px; color: rgba(255,255,255,0.62); }
+
+    .st-font{ font-family: "Creepster", cursive; letter-spacing: 0.1em; }
+    .flicker{ animation: textFlicker 2.6s infinite; }
+
+    @keyframes textFlicker{
+      0%{ opacity: 1; filter: brightness(1.05); text-shadow: 0 0 18px rgba(255,0,0,0.28), 0 0 40px rgba(255,0,0,0.10); }
+      5%{ opacity: 0.75; filter: brightness(0.95); }
+      8%{ opacity: 1; filter: brightness(1.1); }
+      13%{ opacity: 0.55; filter: brightness(0.85); }
+      16%{ opacity: 1; filter: brightness(1.05); }
+      47%{ opacity: 0.85; }
+      50%{ opacity: 1; }
+      70%{ opacity: 0.78; }
+      72%{ opacity: 1; }
+      100%{ opacity: 0.92; }
+    }
+
+    .rift{
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, rgba(255,0,0,0.12) 0%, rgba(0,0,0,0.92) 60%, rgba(0,0,0,0.98) 100%);
+      backdrop-filter: blur(6px);
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .rift[data-show="1"]{ display: flex; animation: riftFadeIn 140ms ease-out forwards; }
+
+    .rift__beam{
+      width: min(70vw, 860px);
+      height: min(60vh, 420px);
+      border-radius: 18px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 45, 45, 0.22);
+      box-shadow: 0 0 0 1px rgba(255,45,45,0.12) inset, 0 0 40px rgba(255,45,45,0.14);
+      background: rgba(0,0,0,0.45);
+      transform: scale(0.98);
+      animation: riftPulse 760ms ease-in-out infinite;
+    }
+
+    .rift__beam::before{
+      content: "";
       position: absolute;
-      top: 16px;
-      right: 16px;
-      font-size: 11px;
-      padding: 4px 8px;
+      inset: -40%;
+      background:
+        conic-gradient(from 180deg, rgba(255,45,45,0.0), rgba(255,45,45,0.22), rgba(0,214,255,0.16), rgba(255,196,0,0.16), rgba(255,45,45,0.0));
+      animation: riftSpin 820ms linear infinite;
+      filter: blur(6px);
+      opacity: 0.85;
     }
-    .stats-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
+
+    .rift__beam::after{
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.78) 100%);
     }
-    .stats-card h3 {
-      font-size: 32px;
-      margin: 0;
-      font-weight: bold;
+
+    @keyframes riftFadeIn{ to { opacity: 1; } }
+    @keyframes riftSpin{ to { transform: rotate(360deg); } }
+    @keyframes riftPulse{ 0%{ transform: scale(0.98); } 50%{ transform: scale(1.01); } 100%{ transform: scale(0.98); } }
+    .top-actions{ display:flex; gap: 10px; padding-top: 8px; }
+    .pill{ display:inline-flex; align-items:center; justify-content:center; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.86); background: rgba(0,0,0,0.32); text-decoration:none; font-size: 12px; letter-spacing: 0.4px; }
+    .pill:hover{ border-color: rgba(255,255,255,0.26); background: rgba(0,0,0,0.48); color: rgba(255,255,255,0.92); }
+    .pill.pill-primary{ border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); }
+
+    .stats{ max-width: 1120px; margin: 8px auto 12px; display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .stat{
+      height: 108px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.62), rgba(0,0,0,0.36));
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 12px 34px rgba(0,0,0,0.55);
+      position: relative;
+      overflow:hidden;
+      padding: 14px 16px;
     }
-    .stats-card p {
-      margin: 0;
-      opacity: 0.9;
-      font-size: 14px;
+    .stat::before{
+      content:"";
+      position:absolute;
+      inset: -1px;
+      border-radius: 14px;
+      padding:1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events:none;
+      opacity: 0.8;
+    }
+    .stat.stat-cyan{ border-color: rgba(0,214,255,0.30); box-shadow: 0 0 0 1px rgba(0,214,255,0.14) inset, 0 12px 34px rgba(0,0,0,0.55); }
+    .stat.stat-red{ border-color: rgba(255,45,45,0.30); box-shadow: 0 0 0 1px rgba(255,45,45,0.14) inset, 0 12px 34px rgba(0,0,0,0.55); }
+    .stat.stat-blue{ border-color: rgba(0,214,255,0.26); box-shadow: 0 0 0 1px rgba(0,214,255,0.10) inset, 0 12px 34px rgba(0,0,0,0.55); }
+    .stat.stat-gold{ border-color: rgba(255,196,0,0.30); box-shadow: 0 0 0 1px rgba(255,196,0,0.14) inset, 0 12px 34px rgba(0,0,0,0.55); }
+    .stat-num{ font-size: 30px; font-weight: 900; letter-spacing: 0.6px; margin-top: 4px; }
+    .stat-label{ font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.66); margin-top: 8px; }
+    .stat-watermark{ position:absolute; right: 12px; top: 10px; opacity: 0.10; font-size: 54px; }
+
+    @media (max-width: 980px){
+      .stats{ grid-template-columns: repeat(2, 1fr); }
+      .brand-title{ font-size: 36px; }
+    }
+    @media (max-width: 520px){
+      .stats{ grid-template-columns: 1fr; }
+      .topbar{ flex-direction: column; align-items: flex-start; }
+    }
+
+    .music{
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      padding: 10px 14px 14px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.78) 30%, rgba(0,0,0,0.92));
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .player{ max-width: 1120px; margin: 0 auto; }
+    .player__row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .player__title{ font-size: 12px; letter-spacing: 0.6px; color: rgba(255,255,255,0.78); }
+    .player__time{ font-size: 12px; letter-spacing: 0.6px; color: rgba(255,255,255,0.68); }
+    .player__bar{ height: 8px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow:hidden; margin: 8px 0 10px; cursor:pointer; }
+    .player__fill{ height: 100%; width: 0%; background: linear-gradient(90deg, rgba(255,45,45,0.85), rgba(255,196,0,0.80)); }
+    .player__controls{ display:flex; gap: 10px; }
+    .player__controls .btn{ border-radius: 999px; padding: 6px 14px; font-size: 12px; border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.82); background: rgba(0,0,0,0.35); }
+    .player__controls .btn:hover{ border-color: rgba(255,255,255,0.28); background: rgba(0,0,0,0.48); }
+    .player__controls .btn.btn--primary{ border-color: rgba(255,45,45,0.30); background: rgba(255,45,45,0.10); }
+
+    @media (max-width: 860px){
+      .hub-left{ min-width: 0; }
+      .hub-row{ flex-direction: column; align-items: stretch; }
+      .hub-items{ justify-content: flex-start; }
     }
   </style>
 </head>
 <body>
-  <div class="container" style="max-width: 1400px;">
-    <div class="text-center mb-4">
-      <h1 class="text-white mb-2"><i class="bi bi-shield-exclamation"></i> 攻击测试中心</h1>
-      <p class="text-white-50">全面的 Web 安全攻击测试平台</p>
-    </div>
+  <div class="bg-fog"></div>
+  <div class="bg-overlay"></div>
+  <div id="riftOverlay" class="rift" aria-hidden="true">
+    <div class="rift__beam"></div>
+  </div>
 
-    <div class="row mb-4">
-      <div class="col-md-3">
-        <div class="stats-card">
-          <h3 id="totalAttacks">0</h3>
-          <p>总攻击次数</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-          <h3 id="blockedAttacks">0</h3>
-          <p>已拦截攻击</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-          <h3 id="attackTypes">7</h3>
-          <p>攻击类型</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-          <h3 id="defenseRate">0%</h3>
-          <p>防御成功率</p>
-        </div>
-      </div>
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-kicker">ATTACK HUB</div>
+      <div class="brand-title st-font flicker">SECURITY DASHBOARD</div>
+      <div class="brand-sub">The Upside Down is watching your traffic.</div>
     </div>
+    <div class="top-actions">
+      <a class="pill" href="{{ url_for('login') }}">Login</a>
+      <a class="pill" href="{{ url_for('console') }}">Console</a>
+      <a id="openRift" class="pill pill-primary" href="{{ url_for('dashboard') }}">OPEN RIFT</a>
+    </div>
+  </div>
 
-    <div class="category-section">
-      <div class="category-header">
-        <span class="category-icon">💉</span>
-        <div>
-          <h2 class="mb-0">注入类攻击 (Injection Attacks)</h2>
-          <p class="text-muted mb-0">通过注入恶意代码来操纵应用程序行为</p>
+  <div class="stats">
+    <div class="stat stat-cyan">
+      <div id="statTotal" class="stat-num">--</div>
+      <div class="stat-label">TOTAL ATTACKS</div>
+      <div class="stat-watermark"><i class="bi bi-wifi"></i></div>
+    </div>
+    <div class="stat stat-red">
+      <div id="statBlocked" class="stat-num">--</div>
+      <div class="stat-label">BLOCKED</div>
+      <div class="stat-watermark"><i class="bi bi-shield"></i></div>
+    </div>
+    <div class="stat stat-blue">
+      <div id="statTypes" class="stat-num">--</div>
+      <div class="stat-label">TYPES</div>
+      <div class="stat-watermark"><i class="bi bi-bug"></i></div>
+    </div>
+    <div class="stat stat-gold">
+      <div id="statSuccess" class="stat-num">--</div>
+      <div class="stat-label">SUCCESS</div>
+      <div class="stat-watermark"><i class="bi bi-graph-up"></i></div>
+    </div>
+  </div>
+
+  <div class="hub-wrap">
+    <div class="hub-row hub-red">
+      <div class="hub-left">
+        <div class="hub-icon"><i class="bi bi-code-slash"></i></div>
+        <div class="hub-titles">
+          <p class="hub-title">注入类攻击</p>
+          <div class="hub-sub">INJECTION ATTACKS</div>
         </div>
       </div>
-      
-      <div class="row">
-        <div class="col-md-4">
-          <div class="attack-card" onclick="location.href='{{ url_for('test_xss_page') }}'">
-            <span class="severity-badge badge bg-danger">HIGH</span>
-            <h4><i class="bi bi-code-slash"></i> XSS 跨站脚本</h4>
-            <p>反射型、存储型、DOM型 XSS 攻击测试</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary me-1">反射型</span>
-              <span class="badge bg-secondary me-1">存储型</span>
-              <span class="badge bg-secondary">DOM型</span>
-            </div>
-          </div>
+      <div class="hub-items">
+        <div class="hub-item">
+          <div class="hub-dot" data-goto="{{ url_for('test_xss_page') }}" title="XSS"></div>
+          <div class="hub-item-label">XSS</div>
         </div>
-        
-        <div class="col-md-4">
-          <div class="attack-card" onclick="location.href='{{ url_for('test_sqli') }}'">
-            <span class="severity-badge badge bg-danger">CRITICAL</span>
-            <h4><i class="bi bi-database-fill-exclamation"></i> SQL 注入</h4>
-            <p>数据库查询注入、联合查询、盲注测试</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary me-1">经典注入</span>
-              <span class="badge bg-secondary me-1">UNION</span>
-              <span class="badge bg-secondary">盲注</span>
-            </div>
-          </div>
+        <div class="hub-item">
+          <div class="hub-dot" data-goto="{{ url_for('test_sqli') }}" title="SQL"></div>
+          <div class="hub-item-label">SQL</div>
         </div>
-        
-        <div class="col-md-4">
-          <div class="attack-card" onclick="location.href='{{ url_for('test_cmdi') }}'">
-            <span class="severity-badge badge bg-danger">CRITICAL</span>
-            <h4><i class="bi bi-terminal"></i> 命令注入</h4>
-            <p>操作系统命令执行、反弹Shell测试</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary me-1">分号注入</span>
-              <span class="badge bg-secondary me-1">管道符</span>
-              <span class="badge bg-secondary">命令替换</span>
-            </div>
-          </div>
+        <div class="hub-item">
+          <div class="hub-dot" data-goto="{{ url_for('test_cmdi') }}" title="Command"></div>
+          <div class="hub-item-label">COMMAND</div>
         </div>
       </div>
     </div>
 
-    <div class="category-section">
-      <div class="category-header">
-        <span class="category-icon">🚫</span>
-        <div>
-          <h2 class="mb-0">访问控制攻击 (Access Control)</h2>
-          <p class="text-muted mb-0">试图访问未授权的资源或文件</p>
+    <div class="hub-row hub-gold">
+      <div class="hub-left">
+        <div class="hub-icon"><i class="bi bi-lock"></i></div>
+        <div class="hub-titles">
+          <p class="hub-title">访问控制</p>
+          <div class="hub-sub">ACCESS CONTROL</div>
         </div>
       </div>
-      
-      <div class="row">
-        <div class="col-md-4">
-          <div class="attack-card" onclick="location.href='{{ url_for('test_path_traversal') }}'">
-            <span class="severity-badge badge bg-warning text-dark">HIGH</span>
-            <h4><i class="bi bi-folder2-open"></i> 目录遍历</h4>
-            <p>路径遍历、敏感文件访问测试</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary me-1">相对路径</span>
-              <span class="badge bg-secondary me-1">编码绕过</span>
-              <span class="badge bg-secondary">绝对路径</span>
-            </div>
-          </div>
+      <div class="hub-items">
+        <div class="hub-item">
+          <div class="hub-dot" data-goto="{{ url_for('test_path_traversal') }}" title="Traversal"></div>
+          <div class="hub-item-label">TRAVERSAL</div>
         </div>
-        
-        <div class="col-md-4">
-          <div class="attack-card" style="opacity: 0.6; cursor: not-allowed;">
-            <span class="severity-badge badge bg-warning text-dark">MEDIUM</span>
-            <h4><i class="bi bi-key"></i> 权限提升</h4>
-            <p>垂直/水平权限提升测试 (即将推出)</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary">开发中</span>
-            </div>
-          </div>
+        <div class="hub-item">
+          <div class="hub-dot disabled" title="Privilege"></div>
+          <div class="hub-item-label">PRIVILEGE</div>
         </div>
-        
-        <div class="col-md-4">
-          <div class="attack-card" style="opacity: 0.6; cursor: not-allowed;">
-            <span class="severity-badge badge bg-warning text-dark">HIGH</span>
-            <h4><i class="bi bi-file-lock"></i> 文件上传</h4>
-            <p>恶意文件上传、WebShell测试 (即将推出)</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary">开发中</span>
-            </div>
-          </div>
+        <div class="hub-item">
+          <div class="hub-dot disabled" title="Upload"></div>
+          <div class="hub-item-label">UPLOAD</div>
         </div>
       </div>
     </div>
 
-    <div class="category-section">
-      <div class="category-header">
-        <span class="category-icon">⏱️</span>
-        <div>
-          <h2 class="mb-0">行为分析攻击 (Behavioral Analysis)</h2>
-          <p class="text-muted mb-0">通过异常行为模式进行的攻击</p>
+    <div class="hub-row hub-cyan">
+      <div class="hub-left">
+        <div class="hub-icon"><i class="bi bi-gear"></i></div>
+        <div class="hub-titles">
+          <p class="hub-title">行为分析</p>
+          <div class="hub-sub">BEHAVIORAL ANALYSIS</div>
         </div>
       </div>
-      
-      <div class="row">
-        <div class="col-md-4">
-          <div class="attack-card" onclick="location.href='/attack/auth_security'">
-            <span class="severity-badge badge bg-warning text-dark">HIGH</span>
-            <h4><i class="bi bi-person-badge"></i> 认证与会话管理</h4>
-            <p>暴力破解/撞库、弱口令检测、会话劫持防护演示</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary me-1">暴力破解</span>
-              <span class="badge bg-secondary me-1">弱口令</span>
-              <span class="badge bg-secondary">会话劫持</span>
-            </div>
-          </div>
+      <div class="hub-items">
+        <div class="hub-item">
+          <div class="hub-dot" data-goto="/attack/auth_security" title="Auth"></div>
+          <div class="hub-item-label">AUTH</div>
         </div>
-
-        <div class="col-md-4">
-          <div class="attack-card" style="opacity: 0.6; cursor: not-allowed;">
-            <span class="severity-badge badge bg-warning text-dark">HIGH</span>
-            <h4><i class="bi bi-lock"></i> 暴力破解</h4>
-            <p>密码爆破、频率限制测试 (即将推出)</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary">开发中</span>
-            </div>
-          </div>
+        <div class="hub-item">
+          <div class="hub-dot disabled" title="Brute Force"></div>
+          <div class="hub-item-label">BRUTE FORCE</div>
         </div>
-        
-        <div class="col-md-4">
-          <div class="attack-card" style="opacity: 0.6; cursor: not-allowed;">
-            <span class="severity-badge badge bg-info">MEDIUM</span>
-            <h4><i class="bi bi-arrow-repeat"></i> DoS 攻击</h4>
-            <p>拒绝服务、资源耗尽测试 (即将推出)</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary">开发中</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-4">
-          <div class="attack-card" style="opacity: 0.6; cursor: not-allowed;">
-            <span class="severity-badge badge bg-info">MEDIUM</span>
-            <h4><i class="bi bi-robot"></i> 爬虫检测</h4>
-            <p>恶意爬虫、Bot检测测试 (即将推出)</p>
-            <div class="mt-2">
-              <span class="badge bg-secondary">开发中</span>
-            </div>
-          </div>
+        <div class="hub-item">
+          <div class="hub-dot disabled" title="DoS"></div>
+          <div class="hub-item-label">DOS</div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="text-center mt-4">
-      <a href="{{ url_for('console') }}" class="btn btn-outline-light btn-lg me-2">
-        <i class="bi bi-speedometer2"></i> 控制台
-      </a>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-lg">
-        <i class="bi bi-graph-up"></i> 数据分析
-      </a>
+  <div class="music">
+    <div class="player">
+      <input id="musicInput" type="file" accept="audio/*" multiple style="display:none">
+      <div class="player__row">
+        <div id="musicTitle" class="player__title">No music selected</div>
+        <div id="musicTime" class="player__time">0:00 / 0:00</div>
+      </div>
+      <div id="musicBar" class="player__bar" role="presentation">
+        <div id="musicFill" class="player__fill"></div>
+      </div>
+      <div class="player__controls">
+        <button id="btnPrev" class="btn" type="button">Prev</button>
+        <button id="btnToggle" class="btn btn--primary" type="button">Music: OFF</button>
+        <button id="btnNext" class="btn" type="button">Next</button>
+        <button id="btnImport" class="btn" type="button">Import</button>
+        <a href="{{ url_for('console') }}" class="btn" role="button">Console</a>
+      </div>
+      <div class="player__row" style="margin-top:10px;">
+        <div class="player__title">Backend: <span id="backendUrl"></span></div>
+        <div class="player__time"></div>
+      </div>
     </div>
   </div>
 
   <script>
-    async function loadStats() {
-      try {
-        const r = await fetch('/api/attack/stats');
-        const data = await r.json();
-        
-        document.getElementById('totalAttacks').textContent = data.total || 0;
-        document.getElementById('blockedAttacks').textContent = data.blocked || 0;
-        document.getElementById('attackTypes').textContent = data.types || 7;
-        
-        const rate = data.total > 0 ? Math.round((data.blocked / data.total) * 100) : 0;
-        document.getElementById('defenseRate').textContent = rate + '%';
-      } catch(e) {
-        console.error('Failed to load stats:', e);
+    (function(){
+      // subtle parallax for background
+      let raf = 0;
+      let mx = 0;
+      let my = 0;
+      function onMove(e){
+        const w = window.innerWidth || 1;
+        const h = window.innerHeight || 1;
+        mx = (e.clientX / w) - 0.5;
+        my = (e.clientY / h) - 0.5;
+        if(raf) return;
+        raf = window.requestAnimationFrame(()=>{
+          raf = 0;
+          document.documentElement.style.setProperty('--mx', String(mx));
+          document.documentElement.style.setProperty('--my', String(my));
+        });
       }
-    }
-    
-    loadStats();
-    setInterval(loadStats, 5000);
+      window.addEventListener('mousemove', onMove, { passive: true });
+
+      // OPEN RIFT transition
+      const riftLink = document.getElementById('openRift');
+      const rift = document.getElementById('riftOverlay');
+      function openRift(url){
+        if(!rift){
+          window.location.assign(url);
+          return;
+        }
+        try{
+          rift.setAttribute('data-show','1');
+        }catch(_e){}
+        // quick transition, then navigate
+        setTimeout(()=>{
+          window.location.assign(url);
+        }, 520);
+      }
+      riftLink?.addEventListener('click', (e)=>{
+        try{
+          const url = riftLink.getAttribute('href') || '{{ url_for('dashboard') }}';
+          e.preventDefault();
+          const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if(reduce){
+            window.location.assign(url);
+            return;
+          }
+          openRift(url);
+        }catch(_e){
+          // fallback
+        }
+      });
+
+      async function loadStats(){
+        try{
+          const r = await fetch('/api/attack/stats', { credentials: 'same-origin' });
+          const data = await r.json();
+          const total = Number(data.total || 0);
+          const blocked = Number(data.blocked || 0);
+          const types = Number(data.types || 0);
+          const rate = total > 0 ? Math.round((blocked / total) * 100) : 0;
+          const elTotal = document.getElementById('statTotal');
+          const elBlocked = document.getElementById('statBlocked');
+          const elTypes = document.getElementById('statTypes');
+          const elSuccess = document.getElementById('statSuccess');
+          if(elTotal) elTotal.textContent = String(total);
+          if(elBlocked) elBlocked.textContent = String(blocked);
+          if(elTypes) elTypes.textContent = String(types);
+          if(elSuccess) elSuccess.textContent = String(rate) + '%';
+        }catch(_e){
+          // ignore
+        }
+      }
+
+      function fmt(t){
+        if(!Number.isFinite(t) || t <= 0) return '0:00';
+        const m = Math.floor(t / 60);
+        const s = Math.floor(t % 60);
+        return `${m}:${String(s).padStart(2,'0')}`;
+      }
+
+      document.querySelectorAll('.hub-dot[data-goto]').forEach((el)=>{
+        el.addEventListener('click', ()=>{
+          const url = el.getAttribute('data-goto');
+          if(url) window.location.assign(url);
+        });
+      });
+
+      const input = document.getElementById('musicInput');
+      const titleEl = document.getElementById('musicTitle');
+      const timeEl = document.getElementById('musicTime');
+      const barEl = document.getElementById('musicBar');
+      const fillEl = document.getElementById('musicFill');
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+      const btnToggle = document.getElementById('btnToggle');
+      const btnImport = document.getElementById('btnImport');
+
+      let list = [];
+      let idx = 0;
+      let playing = false;
+      let audio = null;
+
+      function setFill(){
+        if(!audio || !fillEl) return;
+        const dur = audio.duration || 0;
+        const pos = audio.currentTime || 0;
+        const ratio = dur > 0 ? Math.max(0, Math.min(1, pos / dur)) : 0;
+        fillEl.style.width = `${ratio * 100}%`;
+        if(timeEl) timeEl.textContent = `${fmt(pos)} / ${fmt(dur)}`;
+      }
+
+      function cleanupAudio(){
+        if(!audio) return;
+        try{ audio.pause(); }catch(_e){}
+        try{ audio.src = ''; }catch(_e){}
+        audio = null;
+      }
+
+      function loadTrack(i){
+        if(!list.length) return;
+        idx = (i + list.length) % list.length;
+        cleanupAudio();
+        audio = new Audio(list[idx].url);
+        audio.loop = true;
+        audio.addEventListener('timeupdate', setFill);
+        audio.addEventListener('loadedmetadata', setFill);
+        if(titleEl) titleEl.textContent = list[idx].name || 'Track';
+        if(playing){
+          audio.play().catch(()=>{ playing = false; if(btnToggle) btnToggle.textContent = 'Music: OFF'; });
+        }
+        setFill();
+      }
+
+      function togglePlay(){
+        if(!list.length){
+          playing = false;
+          if(btnToggle) btnToggle.textContent = 'Music: OFF';
+          return;
+        }
+        playing = !playing;
+        if(btnToggle) btnToggle.textContent = playing ? 'Music: ON' : 'Music: OFF';
+        if(!audio) loadTrack(idx);
+        if(!audio) return;
+        if(playing){
+          audio.play().catch(()=>{ playing = false; if(btnToggle) btnToggle.textContent = 'Music: OFF'; });
+        }else{
+          try{ audio.pause(); }catch(_e){}
+        }
+      }
+
+      btnImport?.addEventListener('click', ()=> input?.click());
+      btnToggle?.addEventListener('click', togglePlay);
+      btnPrev?.addEventListener('click', ()=>{ if(!list.length) return; loadTrack(idx - 1); if(!playing) togglePlay(); });
+      btnNext?.addEventListener('click', ()=>{ if(!list.length) return; loadTrack(idx + 1); if(!playing) togglePlay(); });
+
+      input?.addEventListener('change', (e)=>{
+        const files = e && e.target && e.target.files ? Array.from(e.target.files) : [];
+        if(!files.length) return;
+        list.forEach((t)=>{ try{ URL.revokeObjectURL(t.url); }catch(_e){} });
+        list = files.map((f)=>({ name: f.name, url: URL.createObjectURL(f) }));
+        idx = 0;
+        playing = false;
+        if(btnToggle) btnToggle.textContent = 'Music: OFF';
+        loadTrack(0);
+        togglePlay();
+        try{ input.value = ''; }catch(_e){}
+      });
+
+      barEl?.addEventListener('click', (e)=>{
+        if(!audio) return;
+        const rect = barEl.getBoundingClientRect();
+        const x = Math.min(rect.width, Math.max(0, e.clientX - rect.left));
+        const dur = audio.duration || 0;
+        if(dur <= 0) return;
+        audio.currentTime = (x / rect.width) * dur;
+        setFill();
+      });
+
+      window.addEventListener('beforeunload', ()=>{
+        list.forEach((t)=>{ try{ URL.revokeObjectURL(t.url); }catch(_e){} });
+      });
+
+      const backendEl = document.getElementById('backendUrl');
+      if(backendEl) backendEl.textContent = window.location.origin;
+      loadStats();
+      setInterval(loadStats, 5000);
+    })();
   </script>
 </body>
 </html>
