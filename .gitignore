@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.cursor/
+.vscode/*
+!/.vscode/settings.json
+logs/
+instance/
+flask.log
+*.db

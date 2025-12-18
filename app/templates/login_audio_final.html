@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curiosity Login | Immersive Edition</title>
+    <link rel="icon" href="data:,">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* KOKUYO 调色盘 */
+            --acid-green: #CCFF00;
+            --hot-pink: #FF9EAA;
+            --cyan-blue: #00CCFF;
+            --deep-black: #111111;
+            --paper-white: #f4f4f4;
+            
+            --book-w: 460px;
+            --book-h: 640px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #f0f0f0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+            perspective: 1500px; /* 3D 深度 */
+            user-select: none;
+        }
+
+        .page-flip-overlay{
+            position:fixed;
+            inset:0;
+            z-index:9999;
+            pointer-events:none;
+            opacity:0;
+            transition: opacity 0.12s linear;
+            perspective: 1800px;
+        }
+
+        .page-flip-overlay.active{ opacity:1; }
+
+        .page-flip-dim{
+            position:absolute;
+            inset:0;
+            background: rgba(0,0,0,0.55);
+            opacity:0;
+            transition: opacity 0.12s ease;
+        }
+
+        .page-flip-overlay.active .page-flip-dim{ opacity:1; }
+
+        .page-flip-sheet{
+            position:absolute;
+            inset:-10% -10%;
+            background: linear-gradient(90deg,
+                rgba(0,0,0,0.65),
+                rgba(255,255,255,0.95) 38%,
+                rgba(0,0,0,0.55) 62%,
+                rgba(0,0,0,0.70)
+            );
+            transform-origin: left center;
+            transform: translateX(-30%) rotateY(0deg) translateZ(0);
+            box-shadow: 0 55px 180px rgba(0,0,0,0.65);
+            will-change: transform;
+        }
+
+        .page-flip-sheet.sheet-2{
+            opacity: 0.92;
+            filter: contrast(1.08) saturate(1.08);
+            background: linear-gradient(90deg,
+                rgba(0,0,0,0.70),
+                rgba(255,255,255,0.98) 34%,
+                rgba(0,0,0,0.62) 60%,
+                rgba(0,0,0,0.78)
+            );
+        }
+
+        .page-flip-overlay.active .page-flip-sheet{
+            animation: pageFlipSweep 0.98s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .page-flip-overlay.active .page-flip-sheet.sheet-2{
+            animation-delay: 0.06s;
+        }
+
+        @keyframes pageFlipSweep{
+            0%{ transform: translateX(-30%) rotateY(0deg); }
+            48%{ transform: translateX(10%) rotateY(-120deg); }
+            100%{ transform: translateX(140%) rotateY(-178deg); }
+        }
+
+        /* === 音频控制开关 === */
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: #fff;
+            border: 2px solid #000;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .sound-toggle:hover { background: var(--acid-green); transform: scale(1.05); }
+        .sound-indicator {
+            width: 10px; height: 10px; background: #000; border-radius: 50%;
+        }
+        .sound-toggle.playing .sound-indicator {
+            animation: pulseAudio 1s infinite alternate;
+            background: #ff3333;
+        }
+        @keyframes pulseAudio { from { transform: scale(0.8); opacity: 0.7; } to { transform: scale(1.3); opacity: 1; } }
+
+        /* === 1. 混沌背景层 === */
+        .chaos-bg { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .float-item { position: absolute; opacity: 0.9; animation: floatAnim 20s infinite linear; }
+        
+        .shape-1 { 
+            top: 15%; left: 10%; width: 80px; height: 80px; 
+            background: var(--hot-pink); 
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%); 
+            animation-duration: 25s;
+        }
+        .shape-2 { 
+            bottom: 20%; right: 15%; width: 100px; height: 60px; 
+            background: var(--cyan-blue); border-radius: 50px; 
+            animation-duration: 30s; animation-direction: reverse; 
+        }
+
+        @keyframes floatAnim {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(30px, -30px) rotate(15deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        /* === 2. 巨手层 (In-Your-Face Zoom) === */
+        .giant-hand-layer {
+            position: absolute;
+            top: -15%;      /* 从顶部伸入 */
+            right: -10%;    /* 偏右 */
+            width: 800px;   /* 巨大尺寸 */
+            z-index: 20;    /* 在书本之上(视觉遮挡)或之下取决于设计，这里放底层营造景深 */
+            pointer-events: none;
+            transform-origin: top right;
+            /* 进场动画：极速放大 */
+            animation: handEnter 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes handEnter {
+            0% {
+                opacity: 0;
+                transform: translate3d(200px, -300px, -500px) scale(0.4) rotate(-30deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+            }
+        }
+
+        .hand-svg {
+            width: 100%;
+            filter: drop-shadow(-30px 40px 50px rgba(0,0,0,0.3)); /* 巨大的投影 */
+            animation: handIdle 6s ease-in-out infinite alternate;
+            animation-delay: 1.2s;
+        }
+
+        @keyframes handIdle {
+            0% { transform: rotate(0deg) translateY(0); }
+            100% { transform: rotate(2deg) translateY(15px); }
+        }
+
+        /* === 3. 书本舞台 === */
+        .book-stage {
+            position: relative;
+            z-index: 30; /* 核心交互层 */
+            width: var(--book-w);
+            height: var(--book-h);
+            transform-style: preserve-3d;
+            /* 书本入场：被手扔下来的感觉 */
+            animation: bookDrop 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: translateY(200px);
+        }
+
+        @keyframes bookDrop {
+            0% { opacity: 0; transform: translateY(300px) scale(0.8) rotateX(20deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0deg); }
+        }
+
+        /* 翻书后的状态 */
+        .book-stage.open {
+            transform: translateX(50%) !important; /* 覆盖入场动画位置 */
+            transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .book-stage.leaving {
+            animation: bookLeave 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        @keyframes bookLeave {
+            0% { transform: translateX(50%) rotateY(0deg); opacity: 1; }
+            100% { transform: translateX(140%) rotateY(-85deg); opacity: 0; }
+        }
+
+        /* 封面组 */
+        .cover-group {
+            position: absolute; width: 100%; height: 100%; 
+            transform-origin: left center; transform-style: preserve-3d;
+            transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+            cursor: pointer; z-index: 40;
+        }
+        
+        .book-stage.open .cover-group { transform: rotateY(-180deg); pointer-events: none; }
+
+        /* 封面正反面 */
+        .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 4px 12px 12px 4px; }
+        
+        .cover-front {
+            background: var(--acid-green);
+            border: 3px solid #000;
+            padding: 40px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            /* 噪点 */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
+            box-shadow: -5px 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .cover-back {
+            background: var(--paper-white);
+            transform: rotateY(180deg);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 底页 */
+        .back-page {
+            position: absolute; width: 100%; height: 100%;
+            background: var(--paper-white);
+            z-index: 20;
+            border-left: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 10px 20px 50px rgba(0,0,0,0.1);
+            border-radius: 4px 12px 12px 4px;
+        }
+
+        /* === 4. Pop-up 魔法弹起 === */
+        .popup {
+            position: absolute;
+            transform-style: preserve-3d;
+            transform-origin: bottom center;
+            transform: rotateX(90deg); /* 初始倒下 */
+            transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition-delay: 0.1s;
+        }
+
+        .book-stage.open .popup { transform: rotateX(0deg); }
+
+        /* 登录表单容器 (作为一个弹起物) */
+        .login-container {
+            bottom: 80px; left: 40px; right: 40px; height: 400px;
+            background: #fff; border: 2px solid #000; padding: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition-delay: 0.4s; /* 比书页翻开稍慢 */
+            /* 初始微张状态，看起来更像书 */
+            transform: rotateX(85deg);
+        }
+        
+        .book-stage.open .login-container { transform: rotateX(0deg) translateZ(10px); }
+
+        /* 左页装饰球 */
+        .ball-popup {
+            bottom: 30%; left: 20%; width: 120px; height: 120px;
+            background: var(--hot-pink); border-radius: 50%;
+            transition-delay: 0.3s;
+        }
+
+        /* 控件样式 */
+        .input-line {
+            width: 100%; border: none; border-bottom: 2px solid #000;
+            padding: 15px 0; margin-bottom: 25px; background: transparent;
+            font-size: 1.1rem; font-weight: bold; outline: none;
+            transition: 0.3s;
+        }
+        .input-line:focus { border-bottom-color: var(--hot-pink); color: var(--hot-pink); }
+        
+        .btn-enter {
+            width: 100%; padding: 18px; background: #000; color: #fff;
+            border: none; font-weight: bold; font-size: 1rem; cursor: pointer;
+            text-transform: uppercase; transition: transform 0.2s;
+        }
+        .btn-enter:hover { background: var(--acid-green); color: #000; transform: translateY(-3px); }
+
+        #enterHitbox{
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 0;
+            display: none;
+            z-index: 60;
+            background: transparent;
+            pointer-events: auto;
+        }
+
+        /* 闪烁提示 */
+        .alert-box { color: red; font-size: 0.8rem; margin-bottom: 10px; animation: flash 1s; }
+        @keyframes flash { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* 移动端 */
+        @media (max-width: 900px) {
+            .giant-hand-layer { opacity: 0.3; top: 0; width: 400px; }
+            .book-stage { transform: scale(0.75) translateY(200px); }
+            .book-stage.open { transform: scale(0.75) translateX(0) !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-flip-overlay" id="pageFlipOverlay" aria-hidden="true">
+        <div class="page-flip-dim"></div>
+        <div class="page-flip-sheet sheet-1"></div>
+        <div class="page-flip-sheet sheet-2"></div>
+    </div>
+
+    {% include 'loader_staccato.html' %}
+
+    <div class="sound-toggle" id="soundToggle" onclick="audioManager.toggle()">
+        <div class="sound-indicator"></div>
+        <span id="soundText">SOUND OFF</span>
+    </div>
+
+    <div class="chaos-bg">
+        <div class="float-item shape-1"></div>
+        <div class="float-item shape-2"></div>
+    </div>
+
+    <div class="giant-hand-layer">
+        <svg class="hand-svg" viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="cutout">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" />
+                    <feComposite operator="in" in2="SourceGraphic" />
+                </filter>
+            </defs>
+            <g transform="rotate(170, 300, 400)"> <path d="M250,800 L250,550 C200,550 150,580 100,550 L80,450 
+                         C50,400 80,350 120,360 C140,365 160,400 160,400 
+                         L200,300 C220,250 280,250 300,300 L310,380
+                         L360,260 C380,210 440,210 460,260 L470,380
+                         L520,280 C540,240 600,240 620,280 L600,480
+                         C600,600 550,800 550,800 Z" 
+                      fill="#1a1a1a" />
+                <circle cx="180" cy="320" r="15" fill="#FF9EAA" />
+                <path d="M420,280 L460,280 L440,320 Z" fill="#CCFF00" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="book-stage" id="book">
+        
+        <div class="cover-group" onclick="interactBook()">
+            <div class="face cover-front">
+                <div style="display:flex; justify-content:space-between; font-weight:800; letter-spacing:1px;">
+                    <span>VOL.01</span><span>AUDIO VISUAL</span>
+                </div>
+                <div style="font-family: 'Playfair Display', serif; font-size: 5.5rem; line-height: 0.85;">
+                    Curiosity<br>is<br>Life.
+                </div>
+                <div style="text-align: right; border-top: 3px solid #000; padding-top: 15px; font-weight: bold;">
+                    CLICK TO OPEN ➔
+                </div>
+            </div>
+
+            <div class="face cover-back">
+                <div class="popup ball-popup"></div>
+                <div style="padding: 40px; text-align: center; margin-top: 50px;">
+                    <h3 style="font-family: 'Playfair Display'; font-size: 2rem;">Explore</h3>
+                    <p style="margin-top: 10px; color: #555;">"Every click creates a sound."</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="back-page">
+            <div class="popup login-container">
+                <h2 style="font-family: 'Playfair Display'; font-size: 2.5rem; margin-bottom: 20px;">Login</h2>
+                
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    {% for message in messages %}
+                      <div class="alert-box">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('login') }}" method="post">
+                    <input type="hidden" name="next" value="{{ next|default('') }}">
+                    <input type="text" name="username" class="input-line" placeholder="USERNAME" required>
+                    <input type="password" name="password" class="input-line" placeholder="PASSWORD" required>
+                    <button type="submit" class="btn-enter">Enter Range</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        class AudioManager {
+            constructor() {
+                this.enabled = localStorage.getItem('soundEnabled') === '1';
+                this.sounds = {};
+                // 定义音频路径 (请确保文件存在，否则会自动忽略)
+                this.sources = {
+                    'flip': ['/static/audio/%E7%BF%BB%E4%B9%A6%20_%E7%BF%BB%E4%B9%A615_Freesound.wav']
+                };
+                this.initLoad();
+                this.syncUI();
+            }
+
+            syncUI() {
+                const btn = document.getElementById('soundToggle');
+                const txt = document.getElementById('soundText');
+                if (!btn || !txt) return;
+                if (this.enabled) {
+                    btn.classList.add('playing');
+                    txt.innerText = 'SOUND ON';
+                } else {
+                    btn.classList.remove('playing');
+                    txt.innerText = 'SOUND OFF';
+                }
+            }
+
+            initLoad() {
+                for (let [key, srcList] of Object.entries(this.sources)) {
+                    const list = Array.isArray(srcList) ? srcList : [srcList];
+                    let idx = 0;
+                    const audio = new Audio(list[idx]);
+                    audio.preload = 'auto';
+                    audio.addEventListener('error', () => {
+                        if (idx + 1 < list.length) {
+                            idx += 1;
+                            audio.src = list[idx];
+                            try { audio.load(); } catch (e) {}
+                        }
+                    });
+                    if(key === 'bgm') audio.loop = true;
+                    audio.volume = key === 'bgm' ? 0.3 : 0.6; // BGM音量稍小
+                    this.sounds[key] = audio;
+                    try { audio.load(); } catch (e) {}
+                }
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                const btn = document.getElementById('soundToggle');
+                const txt = document.getElementById('soundText');
+                localStorage.setItem('soundEnabled', this.enabled ? '1' : '0');
+                
+                if (this.enabled) {
+                    btn.classList.add('playing');
+                    txt.innerText = 'SOUND ON';
+                } else {
+                    btn.classList.remove('playing');
+                    txt.innerText = 'SOUND OFF';
+                    if (this.sounds['bgm']) this.sounds['bgm'].pause();
+                }
+            }
+
+            play(name) {
+                if (!this.enabled || !this.sounds[name]) return;
+                
+                const sound = this.sounds[name];
+                // 重置时间以便重复播放音效
+                if (name !== 'bgm') sound.currentTime = 0;
+                
+                sound.play().catch(e => {
+                    console.log('Audio playback prevented:', e);
+                });
+            }
+        }
+
+        const audioManager = new AudioManager();
+
+        let __lastFlipMs = 0;
+        function playFlipEveryClick() {
+            if (!audioManager || !audioManager.enabled) return;
+            const now = Date.now();
+            if (now - __lastFlipMs < 140) return;
+            __lastFlipMs = now;
+            audioManager.play('flip');
+        }
+
+        document.addEventListener('click', (e) => {
+            const toggle = e.target && e.target.closest && e.target.closest('#soundToggle');
+            if (toggle) return;
+            playFlipEveryClick();
+        }, true);
+
+        let __loginSubmitLocked = false;
+        let __loginSubmitTimer = 0;
+        let __loginSubmitWatchdog = 0;
+        let __loginSubmitRetryCount = 0;
+        let __loginLoaderShown = false;
+        const LOGIN_TEMPO_MS = 1600;
+        window.__loginSubmitEvents = window.__loginSubmitEvents || [];
+        window.__loginSubmitLocked = __loginSubmitLocked;
+        const formEl = document.querySelector('form[action]');
+        if (formEl) {
+            const submitBtn = formEl.querySelector('button[type="submit"], input[type="submit"]');
+
+            try {
+                const prev = sessionStorage.getItem('__loginSubmitEventsLast');
+                if (prev) {
+                    window.__loginSubmitEventsLast = JSON.parse(prev);
+                }
+            } catch (e) {}
+
+            const persistEvents = () => {
+                try {
+                    sessionStorage.setItem('__loginSubmitEventsLast', JSON.stringify(window.__loginSubmitEvents || []));
+                    window.__loginSubmitEventsLast = window.__loginSubmitEvents;
+                } catch (e) {}
+            };
+
+            const pushEvt = (evt) => {
+                try {
+                    window.__loginSubmitEvents = window.__loginSubmitEvents || [];
+                    window.__loginSubmitEvents.push(evt);
+                } catch (e) {}
+                persistEvents();
+            };
+
+            pushEvt({ t: Date.now(), step: 'page_load', href: location.href });
+
+            const ensureBookOpen = (reason) => {
+                try {
+                    const bookEl = document.getElementById('book');
+                    if (!bookEl) return;
+                    if (bookEl.classList.contains('open')) return;
+                    bookEl.classList.add('open');
+                    const cg = bookEl.querySelector('.cover-group');
+                    if (cg) cg.style.pointerEvents = 'none';
+                    pushEvt({ t: Date.now(), step: 'auto_open', reason: reason || '' });
+                } catch (e) {}
+            };
+
+            try {
+                const u0 = formEl.querySelector('input[name="username"]');
+                const p0 = formEl.querySelector('input[name="password"]');
+                const hasAutofill = (u0 && (u0.value || '').trim().length > 0) || (p0 && (p0.value || '').trim().length > 0);
+                const hasError = !!document.querySelector('.alert-box');
+                if (hasAutofill || hasError) {
+                    setTimeout(() => ensureBookOpen(hasAutofill ? 'autofill' : 'error'), 0);
+                }
+                if (u0) u0.addEventListener('focus', () => ensureBookOpen('focus_username'), true);
+                if (p0) p0.addEventListener('focus', () => ensureBookOpen('focus_password'), true);
+                const lc = document.querySelector('.login-container');
+                if (lc) lc.addEventListener('pointerdown', () => ensureBookOpen('pointerdown_login_container'), true);
+
+                let __replayGuard = false;
+                document.addEventListener('pointerdown', (e) => {
+                    if (__replayGuard) return;
+                    const bookEl = document.getElementById('book');
+                    if (!bookEl || bookEl.classList.contains('open')) return;
+
+                    const bx = e.clientX;
+                    const by = e.clientY;
+                    const bookRect = bookEl.getBoundingClientRect();
+                    const inBook = (bx >= bookRect.left && bx <= bookRect.right && by >= bookRect.top && by <= bookRect.bottom);
+                    if (!inBook) return;
+
+                    const top = document.elementFromPoint(bx, by);
+                    if (!top) return;
+                    const intercepted = !!(top.closest && top.closest('.cover-group'));
+                    if (!intercepted) return;
+
+                    const wantSubmitReplay = (by >= (bookRect.top + bookRect.height * 0.58));
+                    try { pushEvt({ t: Date.now(), step: 'intercepted_click', tag: top.tagName, cls: top.className || '', replay: wantSubmitReplay ? 1 : 0 }); } catch (e2) {}
+                    e.preventDefault();
+                    e.stopPropagation();
+                    ensureBookOpen('global_replay');
+                    __replayGuard = true;
+                    setTimeout(() => {
+                        __replayGuard = false;
+                        if (!wantSubmitReplay) return;
+                        const btn = document.querySelector('button.btn-enter, input.btn-enter, button[type="submit"].btn-enter');
+                        try { if (btn) btn.click(); } catch (e3) {}
+                    }, 0);
+                }, true);
+            } catch (e) {}
+
+            const doNativeSubmit = () => {
+                persistEvents();
+                try { sessionStorage.setItem('__skipConsoleStaccatoOnce', '1'); } catch (e0) {}
+                try {
+                    HTMLFormElement.prototype.submit.call(formEl);
+                } catch (e) {
+                    try { formEl.submit(); } catch (e2) {}
+                }
+            };
+
+            const showLoginLoaderOnce = (reason) => {
+                if (__loginLoaderShown) return;
+                __loginLoaderShown = true;
+                try { window.__stLoaderTempoMs = LOGIN_TEMPO_MS; } catch (e) {}
+                try { pushEvt({ t: Date.now(), step: 'login_loader_show', reason: reason || '' }); } catch (e2) {}
+                if (window.StaccatoLoader && typeof window.StaccatoLoader.show === 'function') {
+                    try { window.StaccatoLoader.show(); } catch (e3) {}
+                }
+            };
+
+            const logInvalid = (step) => {
+                try {
+                    const u = formEl.querySelector('input[name="username"]');
+                    const p = formEl.querySelector('input[name="password"]');
+                    pushEvt({
+                        t: Date.now(),
+                        step,
+                        userLen: u ? (u.value || '').length : null,
+                        passLen: p ? (p.value || '').length : null
+                    });
+                    if (u && !(u.value || '').trim()) u.focus();
+                    else if (p && !(p.value || '').trim()) p.focus();
+                } catch (e) {}
+            };
+
+            const deferValidateAndStart = (step) => {
+                setTimeout(() => {
+                    if (__loginSubmitLocked) return;
+                    if (typeof formEl.reportValidity === 'function' && !formEl.reportValidity()) {
+                        logInvalid(step);
+                        return;
+                    }
+                    try { pushEvt({ t: Date.now(), step: step + '_valid' }); } catch (e) {}
+                    startLoginSubmitFlow();
+                }, 0);
+            };
+
+            if (!window.__enterHitboxInit) {
+                window.__enterHitboxInit = true;
+                const hit = document.getElementById('enterHitbox') || (() => {
+                    const d = document.createElement('div');
+                    d.id = 'enterHitbox';
+                    document.body.appendChild(d);
+                    return d;
+                })();
+
+                const updateHit = () => {
+                    try {
+                        const bookEl = document.getElementById('book');
+                        if (!bookEl) return;
+                        const r = bookEl.getBoundingClientRect();
+                        if (!r || r.width < 10 || r.height < 10) return;
+
+                        // Cover the lower portion of the book where the Enter Range button is perceived visually.
+                        const left = Math.max(0, r.left - 6);
+                        const top = Math.max(0, r.top + r.height * 0.58);
+                        const width = r.width + 12;
+                        const height = r.height * 0.22;
+
+                        hit.style.left = left + 'px';
+                        hit.style.top = top + 'px';
+                        hit.style.width = width + 'px';
+                        hit.style.height = height + 'px';
+                        hit.style.display = 'block';
+                    } catch (e) {}
+                };
+
+                window.addEventListener('resize', updateHit, true);
+                setInterval(updateHit, 220);
+                setTimeout(updateHit, 0);
+
+                hit.addEventListener('pointerdown', (e) => {
+                    try { pushEvt({ t: Date.now(), step: 'hitbox_pointerdown' }); } catch (e2) {}
+                    try { e.preventDefault(); e.stopPropagation(); } catch (e3) {}
+                    ensureBookOpen('hitbox');
+                    showLoginLoaderOnce('hitbox');
+                    deferValidateAndStart('invalid_on_hitbox');
+                }, true);
+            }
+
+            const startLoginSubmitFlow = () => {
+                if (__loginSubmitLocked) return;
+                __loginSubmitLocked = true;
+                window.__loginSubmitLocked = __loginSubmitLocked;
+                window.__loginSubmitStartTs = Date.now();
+                window.__loginSubmitEvents = window.__loginSubmitEvents || [];
+                try { pushEvt({ t: Date.now(), step: 'start' }); } catch (e) {}
+
+                const book = document.getElementById('book');
+                try { audioManager.play('flip'); } catch (e) {}
+                if (book) {
+                    try { book.classList.add('leaving'); } catch (e) {}
+                }
+                showLoginLoaderOnce('start');
+                if (__loginSubmitTimer) {
+                    clearTimeout(__loginSubmitTimer);
+                }
+                __loginSubmitTimer = setTimeout(() => {
+                    try {
+                        window.__loginSubmitEvents = window.__loginSubmitEvents || [];
+                        try { pushEvt({ t: Date.now(), step: 'submit_call' }); } catch (e2) {}
+                        doNativeSubmit();
+                    } catch (e) {}
+                }, LOGIN_TEMPO_MS);
+
+                if (__loginSubmitWatchdog) {
+                    clearTimeout(__loginSubmitWatchdog);
+                }
+                const watchdogMs = Math.max(2800, LOGIN_TEMPO_MS + 1800);
+                __loginSubmitWatchdog = setTimeout(() => {
+                    try {
+                        const stillOnLogin = (location && location.pathname && location.pathname.indexOf('/login') === 0);
+                        if (!stillOnLogin) return;
+
+                        window.__loginSubmitEvents = window.__loginSubmitEvents || [];
+                        try { pushEvt({ t: Date.now(), step: 'watchdog_on_login', retry: __loginSubmitRetryCount }); } catch (e2) {}
+
+                        if (__loginSubmitRetryCount < 1) {
+                            __loginSubmitRetryCount += 1;
+                            try { pushEvt({ t: Date.now(), step: 'watchdog_retry_submit' }); } catch (e3) {}
+                            try { doNativeSubmit(); } catch (e4) {}
+                            return;
+                        }
+
+                        __loginSubmitLocked = false;
+                        __loginLoaderShown = false;
+                        window.__loginSubmitLocked = __loginSubmitLocked;
+                        if (book) book.classList.remove('leaving');
+                        if (window.StaccatoLoader && typeof window.StaccatoLoader.hide === 'function') {
+                            window.StaccatoLoader.hide();
+                        }
+                        try { document.body.classList.remove('staccato-loading'); } catch (e2) {}
+                    } catch (e) {}
+                }, watchdogMs);
+            };
+
+            if (submitBtn) {
+                submitBtn.addEventListener('pointerdown', (e) => {
+                    if (__loginSubmitLocked) return;
+                    if (typeof formEl.reportValidity === 'function' && !formEl.reportValidity()) {
+                        logInvalid('invalid_on_pointerdown');
+                        return;
+                    }
+                    try { pushEvt({ t: Date.now(), step: 'btn_pointerdown' }); } catch (e2) {}
+                    if (window.StaccatoLoader && typeof window.StaccatoLoader.show === 'function') {
+                        window.StaccatoLoader.show();
+                    }
+
+                    try { pushEvt({ t: Date.now(), step: 'btn_pointerdown_start' }); } catch (e3) {}
+                    try { if (e && typeof e.preventDefault === 'function') e.preventDefault(); } catch (e4) {}
+                    deferValidateAndStart('invalid_on_pointerdown');
+                }, true);
+
+                submitBtn.addEventListener('click', (e) => {
+                    if (__loginSubmitLocked) {
+                        try { pushEvt({ t: Date.now(), step: 'btn_click_ignored_locked' }); } catch (e2) {}
+                        e.preventDefault();
+                        return;
+                    }
+                    try { pushEvt({ t: Date.now(), step: 'btn_click' }); } catch (e3) {}
+                    e.preventDefault();
+                    deferValidateAndStart('invalid_on_click');
+                }, true);
+            }
+
+            formEl.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (__loginSubmitLocked) return;
+                try { pushEvt({ t: Date.now(), step: 'form_submit_event' }); } catch (e2) {}
+                deferValidateAndStart('invalid_on_submit');
+            });
+        }
+
+        function interactBook() {
+            const book = document.getElementById('book');
+            
+            // 防止重复点击
+            if (book.classList.contains('open')) return;
+
+            // 1. 视觉：翻书
+            book.classList.add('open');
+            
+            // 2. 听觉：播放翻页声
+            audioManager.play('flip');
+
+            // 3. 听觉：延迟播放弹起声 (配合 CSS transition-delay 0.4s)
+            setTimeout(() => {
+                // 自动聚焦
+                document.querySelector('input[name="username"]').focus();
+            }, 400);
+        }
+
+        // 页面加载逻辑
+        window.onload = function() {
+            // 播放进场音效 (气流声) - 注意：浏览器可能会阻止自动播放，需要用户交互
+            // 这里我们尝试播放，如果被阻止则静默失败
+            setTimeout(() => {
+                // 只有当用户已经开启声音时才播放 swoop (极少情况)，
+                // 或者我们可以不做自动播放，依靠视觉冲击。
+                // 视觉动画已经在 CSS 中自动运行
+            }, 200);
+
+            // 错误处理：如果有错误消息，直接打开书本
+            const hasError = document.querySelector('.alert-box');
+            if (hasError) {
+                const book = document.getElementById('book');
+                book.style.animation = 'none'; // 移除进场
+                book.style.transform = 'translateY(0)';
+                book.style.opacity = 1;
+                document.querySelector('.giant-hand-layer').style.animation = 'none';
+                document.querySelector('.giant-hand-layer').style.opacity = 1;
+                document.querySelector('.giant-hand-layer').style.transform = 'translate3d(0,0,0)';
+                
+                // 直接展开
+                book.classList.add('open');
+            }
+        }
+    </script>
+</body>
+</html>

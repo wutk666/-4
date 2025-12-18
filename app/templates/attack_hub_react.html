@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>攻击测试中心</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: #0b1020; }
+    .wrap { height: 100%; width: 100%; }
+    .frame { border: 0; width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <iframe class="frame" src="http://localhost:5173" title="Security Dashboard"></iframe>
+  </div>
+  <script>
+    (function () {
+      window.addEventListener('message', function (e) {
+        try {
+          if (!e || !e.data || e.data.type !== 'TOYCARD_NAVIGATE') return;
+          var url = String(e.data.url || '');
+          if (!url) return;
+          window.location.assign(url);
+        } catch (_err) {
+          // ignore
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

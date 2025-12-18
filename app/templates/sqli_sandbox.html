@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>SQL注入靶场 - 数据库查看</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { 
+      margin: 0; 
+      padding: 20px; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+    }
+    .sandbox-header {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .sandbox-header h3 {
+      margin: 0 0 8px 0;
+      color: #856404;
+      font-size: 16px;
+    }
+    .table-container {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .user-table {
+      width: 100%;
+      font-size: 14px;
+    }
+    .user-table th {
+      background: #f8f9fa;
+      padding: 12px;
+      text-align: left;
+      border-bottom: 2px solid #dee2e6;
+    }
+    .user-table td {
+      padding: 12px;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sandbox-header">
+    <h3>SQL注入靶场 - 完整数据库视图</h3>
+    <p style="margin:0;font-size:13px;color:#856404;">
+      此区域展示靶场数据库的完整内容。如果SQL注入防御失败，攻击者可能通过UNION注入等方式获取这些数据。
+    </p>
+  </div>
+
+  <div class="table-container">
+    <h4>VulnerableUser 表</h4>
+    <table class="user-table" id="userTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>用户名</th>
+          <th>邮箱</th>
+          <th>密码</th>
+          <th>角色</th>
+          <th>创建时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" class="text-center">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadDatabase() {
+      try {
+        const r = await fetch('/attack/sqli/database');
+        const data = await r.json();
+        const tbody = document.querySelector('#userTable tbody');
+        
+        if (!data.users || data.users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">数据库为空</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = data.users.map(u => `
+          <tr>
+            <td>${u.id}</td>
+            <td><strong>${u.username}</strong></td>
+            <td>${u.email}</td>
+            <td><code>${u.password}</code></td>
+            <td><span class="badge ${u.role === 'admin' ? 'bg-danger' : 'bg-secondary'}">${u.role}</span></td>
+            <td>${new Date(u.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        document.querySelector('#userTable tbody').innerHTML = 
+          '<tr><td colspan="6" class="text-center text-danger">加载失败: ' + e.message + '</td></tr>';
+      }
+    }
+
+    loadDatabase();
+    setInterval(loadDatabase, 5000);
+  </script>
+</body>
+</html>

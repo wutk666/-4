@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>反射型 XSS 测试结果</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px; }
+    .result-card { background: rgba(255,255,255,0.95); border-radius: 16px; padding: 32px; max-width: 800px; margin: 0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+    .search-result { background: #f8f9fa; border-left: 4px solid #667eea; padding: 16px; border-radius: 8px; margin-top: 20px; }
+    .alert-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="result-card">
+    <h2 class="text-primary mb-3">反射型 XSS 测试结果</h2>
+    <p class="text-muted">URL 参数直接回显到页面（未经过滤）</p>
+    
+    <div class="alert-box">
+      <strong>注意：</strong> 如果防御中间件开启，恶意脚本将被拦截。如果关闭防御，脚本会执行。
+    </div>
+    
+    <div class="search-result">
+      <h5>搜索关键词：</h5>
+      <div class="mt-2">
+        {{ query|safe }}
+      </div>
+    </div>
+    
+    <div class="mt-4">
+      <a href="{{ url_for('test_xss_page') }}" class="btn btn-primary">返回测试页面</a>
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">返回首页</a>
+    </div>
+  </div>
+</body>
+</html>

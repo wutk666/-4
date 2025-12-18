@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>上传测试页背景 · XSS 防御</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { 
+      background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(139, 0, 0, 0.9) 100%);
+      min-height: 100vh; 
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* 日式纹样背景 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(212, 175, 55, 0.05) 35px, rgba(212, 175, 55, 0.05) 36px),
+        repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(212, 175, 55, 0.05) 35px, rgba(212, 175, 55, 0.05) 36px);
+      z-index: 0;
+      pointer-events: none;
+    }
+    
+    .topbar { 
+      background: linear-gradient(90deg, rgba(139, 0, 0, 0.95) 0%, rgba(212, 175, 55, 0.95) 100%); 
+      border-bottom: 3px solid rgba(212, 175, 55, 0.8); 
+      box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 10;
+    }
+    .brand-title { 
+      color: #fff !important; 
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5); 
+      font-weight: bold; 
+      font-size: 1.5rem;
+    }
+    
+    main { 
+      position: relative; 
+      z-index: 1; 
+      padding-top: 30px;
+    }
+    
+    .upload-card {
+      background: linear-gradient(135deg, rgba(26, 26, 26, 0.85) 0%, rgba(60, 60, 60, 0.85) 100%);
+      backdrop-filter: blur(15px) saturate(150%);
+      border: 4px solid rgba(212, 175, 55, 0.6);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 
+        0 20px 60px rgba(0,0,0,0.8),
+        inset 0 0 60px rgba(212, 175, 55, 0.08),
+        0 0 120px rgba(139, 0, 0, 0.3);
+      animation: cardShine 8s ease-in-out infinite;
+    }
+    
+    @keyframes cardShine {
+      0%, 100% { 
+        box-shadow: 
+          0 20px 60px rgba(0,0,0,0.8),
+          inset 0 0 60px rgba(212, 175, 55, 0.08),
+          0 0 120px rgba(139, 0, 0, 0.3);
+      }
+      50% { 
+        box-shadow: 
+          0 20px 60px rgba(0,0,0,0.8),
+          inset 0 0 80px rgba(212, 175, 55, 0.15),
+          0 0 150px rgba(212, 175, 55, 0.5);
+      }
+    }
+    
+    h4 { 
+      color: #D4AF37; 
+      text-shadow: 
+        2px 2px 4px rgba(0,0,0,0.8),
+        0 0 20px rgba(212, 175, 55, 0.5); 
+      font-weight: bold;
+      margin-bottom: 30px;
+    }
+    
+    .upload-zone {
+      border: 3px dashed rgba(212, 175, 55, 0.5);
+      border-radius: 15px;
+      padding: 60px 20px;
+      text-align: center;
+      background: rgba(26, 26, 26, 0.5);
+      backdrop-filter: blur(5px);
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: rgba(212, 175, 55, 0.9);
+      background: rgba(139, 0, 0, 0.2);
+      transform: translateY(-5px);
+      box-shadow: 
+        0 15px 40px rgba(0,0,0,0.6),
+        0 0 50px rgba(212, 175, 55, 0.4);
+    }
+    
+    .upload-zone::before {
+      content: '⚔️';
+      position: absolute;
+      font-size: 150px;
+      opacity: 0.05;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .upload-icon {
+      font-size: 80px;
+      color: #D4AF37;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5));
+    }
+    
+    .upload-text {
+      color: #fff;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    }
+    
+    .upload-hint {
+      color: rgba(212, 175, 55, 0.8);
+      font-size: 0.9rem;
+    }
+    
+    .preview-container {
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(26, 26, 26, 0.7);
+      border: 2px solid rgba(212, 175, 55, 0.4);
+      border-radius: 15px;
+      backdrop-filter: blur(8px);
+      display: none;
+    }
+    
+    .preview-container.show {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .preview-img {
+      max-width: 100%;
+      max-height: 400px;
+      border-radius: 10px;
+      border: 3px solid rgba(212, 175, 55, 0.6);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+    
+    .btn-kny {
+      background: linear-gradient(135deg, #8B0000 0%, #D4AF37 100%);
+      border: 2px solid rgba(212, 175, 55, 0.6);
+      color: #fff;
+      font-weight: bold;
+      padding: 12px 30px;
+      border-radius: 8px;
+      box-shadow: 
+        0 10px 30px rgba(139, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: all 0.3s;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+    
+    .btn-kny:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 
+        0 15px 40px rgba(139, 0, 0, 0.7),
+        0 0 40px rgba(212, 175, 55, 0.6),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+      color: #fff;
+    }
+    
+    .btn-kny:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-back {
+      background: linear-gradient(135deg, rgba(26, 26, 26, 0.8) 0%, rgba(60, 60, 60, 0.8) 100%);
+      border: 2px solid rgba(212, 175, 55, 0.4);
+      color: #D4AF37;
+    }
+    
+    .alert {
+      border-radius: 10px;
+      border: 2px solid;
+      backdrop-filter: blur(10px);
+      font-weight: 500;
+    }
+    
+    .alert-success {
+      background: rgba(0, 100, 0, 0.2);
+      border-color: rgba(0, 255, 0, 0.5);
+      color: #90EE90;
+    }
+    
+    .alert-danger {
+      background: rgba(139, 0, 0, 0.3);
+      border-color: rgba(255, 0, 0, 0.6);
+      color: #FFB6C1;
+    }
+    
+    .file-info {
+      color: #D4AF37;
+      font-size: 0.9rem;
+      margin-top: 15px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+    
+    #fileInput {
+      display: none;
+    }
+    
+    .guide-text {
+      background: rgba(212, 175, 55, 0.1);
+      border-left: 4px solid #D4AF37;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 30px;
+      color: #fff;
+      backdrop-filter: blur(5px);
+    }
+    
+    .guide-text h5 {
+      color: #D4AF37;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    
+    .guide-text ul {
+      margin-bottom: 0;
+      padding-left: 20px;
+    }
+    
+    .guide-text li {
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <nav class="topbar p-3">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="brand-title">🗡️ XSS Guardian - 测试页背景上传</div>
+        <a href="{{ url_for('console') }}" class="btn btn-sm btn-outline-light">返回控制台</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="upload-card">
+          <h4 class="text-center">🎴 上传鬼灭之刃风格背景</h4>
+          
+          <div id="alertBox"></div>
+          
+          <form id="uploadForm">
+            <div class="upload-zone" id="uploadZone">
+              <div class="upload-icon">🌸</div>
+              <div class="upload-text">点击或拖拽图片到此处</div>
+              <div class="upload-hint">支持 PNG、JPG、WebP、SVG 格式 · 推荐竖构图</div>
+              <input type="file" id="fileInput" name="test_bg" accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/webp">
+            </div>
+            
+            <div class="preview-container" id="previewContainer">
+              <h5 class="text-center mb-3" style="color: #D4AF37;">预览</h5>
+              <div class="text-center">
+                <img id="previewImg" class="preview-img" src="" alt="预览">
+                <div class="file-info" id="fileInfo"></div>
+              </div>
+            </div>
+            
+            <div class="text-center mt-4">
+              <button type="submit" class="btn btn-kny me-3" id="uploadBtn" disabled>
+                ⚔️ 上传背景
+              </button>
+              <button type="button" class="btn btn-kny btn-back" onclick="window.location.href='{{ url_for('test_xss_page') }}'">
+                👁️ 查看测试页
+              </button>
+            </div>
+          </form>
+          
+          <div class="guide-text">
+            <h5>📜 鬼灭之刃风格设计指南</h5>
+            <ul>
+              <li><strong>构图：</strong>竖版设计（9:16 或 2:3 比例），适合网页纵向滚动</li>
+              <li><strong>风格：</strong>日式浮世绘 + 墨笔轮廓线 + 传统木版画配色</li>
+              <li><strong>主体：</strong>角色战斗姿势 + 呼吸法特效（水/火/雷/风等元素）</li>
+              <li><strong>特效：</strong>传统水墨画（Sumi-e）风格的视觉效果</li>
+              <li><strong>材质：</strong>镭射闪卡（Holographic Foil）质感</li>
+              <li><strong>边框：</strong>日本传统纹样（青海波、麻叶纹）+ 日式书法</li>
+              <li><strong>色调：</strong>深红、金色、黑色为主，辅以呼吸法对应的颜色</li>
+            </ul>
+            
+            <h5 style="margin-top: 20px;">⚙️ 上传说明</h5>
+            <ul>
+              <li><strong>自动替换：</strong>上传新图片时，所有旧的背景图片会自动删除（备份到 test_bg_backup_*.* 文件）</li>
+              <li><strong>全屏显示：</strong>背景图片会自动填充整个页面（background-size: cover）</li>
+              <li><strong>查看效果：</strong>上传成功后访问测试页面，按 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> 强制刷新</li>
+              <li><strong>支持格式：</strong>PNG、JPG、JPEG、WebP、GIF、SVG</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewImg = document.getElementById('previewImg');
+    const fileInfo = document.getElementById('fileInfo');
+    const alertBox = document.getElementById('alertBox');
+    
+    let selectedFile = null;
+    
+    // 点击上传区域触发文件选择
+    uploadZone.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    // 阻止默认拖拽行为
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadZone.addEventListener(eventName, preventDefaults, false);
+      document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // 拖拽高亮
+    ['dragenter', 'dragover'].forEach(eventName => {
+      uploadZone.addEventListener(eventName, () => {
+        uploadZone.classList.add('dragover');
+      }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      uploadZone.addEventListener(eventName, () => {
+        uploadZone.classList.remove('dragover');
+      }, false);
+    });
+    
+    // 拖拽上传
+    uploadZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    }, false);
+    
+    // 文件选择
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+    
+    // 处理文件
+    function handleFile(file) {
+      // 验证文件类型
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        showAlert('请上传图片文件（PNG/JPG/SVG/WebP/GIF）', 'danger');
+        return;
+      }
+      
+      // 验证文件大小（最大 10MB）
+      if (file.size > 10 * 1024 * 1024) {
+        showAlert('文件大小不能超过 10MB', 'danger');
+        return;
+      }
+      
+      selectedFile = file;
+      
+      // 显示预览
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        previewContainer.classList.add('show');
+        uploadBtn.disabled = false;
+        
+        // 显示文件信息
+        const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileInfo.textContent = `文件名: ${file.name} | 大小: ${sizeInMB} MB`;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // 表单提交
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!selectedFile) {
+        showAlert('请先选择文件', 'danger');
+        return;
+      }
+      
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = '⏳ 上传中...';
+      
+      const formData = new FormData();
+      formData.append('test_bg', selectedFile);
+      
+      try {
+        const response = await fetch('/upload_test_bg', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          showAlert(`✅ ${result.message}<br><br><strong>⚠️ 重要提示：</strong><br>1. 旧的背景图片已被删除<br>2. 请访问测试页面并 <strong>强制刷新</strong>（Ctrl+Shift+R）查看新背景<br>3. 背景会自动填充整个页面`, 'success');
+          uploadBtn.textContent = '✅ 上传成功';
+          
+          // 5秒后提供跳转选项
+          setTimeout(() => {
+            const goToTest = confirm('上传成功！是否现在跳转到测试页面？\n\n到达后请按 Ctrl+Shift+R 强制刷新查看新背景。');
+            if (goToTest) {
+              window.location.href = '/test_xss';
+            } else {
+              uploadBtn.textContent = '⚔️ 上传背景';
+              uploadBtn.disabled = false;
+            }
+          }, 2000);
+        } else {
+          showAlert(`❌ 上传失败: ${result.error}`, 'danger');
+          uploadBtn.textContent = '⚔️ 上传背景';
+          uploadBtn.disabled = false;
+        }
+      } catch (error) {
+        showAlert(`❌ 上传出错: ${error.message}`, 'danger');
+        uploadBtn.textContent = '⚔️ 上传背景';
+        uploadBtn.disabled = false;
+      }
+    });
+    
+    // 显示提示
+    function showAlert(message, type) {
+      alertBox.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+    }
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

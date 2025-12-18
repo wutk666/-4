@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XSS 测试页面</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h2>XSS 攻击测试（请在输入框中尝试注入脚本）</h2>
+    <input type="text" id="payload" placeholder="例如: <script>alert(1)</script>" style="width:400px;">
+    <button onclick="sendPayload()">提交测试</button>
+    <div id="result" style="margin-top:20px;"></div>
+
+    <script>
+        function sendPayload() {
+            const payload = document.getElementById('payload').value;
+            axios.post('/test_xss', { input: payload })
+                .then(res => {
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color:green;">响应: ' + res.data.message + '</p>';
+                })
+                .catch(err => {
+                    const msg = err?.response?.data?.message || err?.response?.data?.error || err.message || '请求失败';
+                    document.getElementById('result').innerHTML =
+                        '<p style="color:red;">防御触发: ' + msg + '</p>';
+                });
+        }
+    </script>
+</body>
+</html>

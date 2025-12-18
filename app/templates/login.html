@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Curiosity is Life</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F0F0F0;
+            --cover-color: #FF9EAA; /* KOKUYO 活力粉 */
+            --accent-green: #AAE765; /* KOKUYO 酸性绿 */
+            --text-main: #111;
+            --page-bg: #FFFFFF;
+            --book-width: 450px; /* 单页宽度 */
+            --book-height: 600px;
+            --anim-speed: 1.2s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            perspective: 1500px; /* 3D 透视深度 */
+        }
+
+        /* 书本容器 */
+        .book-container {
+            position: relative;
+            width: var(--book-width);
+            height: var(--book-height);
+            transition: transform var(--anim-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        /* 翻开时，整体位置调整，保持视觉居中 */
+        .book-container.open {
+            transform: translateX(50%); /* 向右移动半个身位，给翻开的左页腾出空间 */
+        }
+
+        /* 移动端适配：取消居中位移，改为垂直排列或缩小 */
+        @media (max-width: 900px) {
+            .book-container.open { transform: translateX(0) scale(0.8); }
+        }
+
+        /* 封面区域 (可翻转) */
+        .cover {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-origin: left center; /* 以左边缘为轴旋转 */
+            transform-style: preserve-3d;
+            transition: transform var(--anim-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
+            z-index: 10;
+            cursor: pointer;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .book-container.open .cover {
+            transform: rotateY(-180deg); /* 向左翻开 180度 */
+            box-shadow: 5px 20px 40px rgba(0,0,0,0.05); /* 翻开后阴影变淡 */
+        }
+
+        /* 封面的正面和背面 */
+        .cover-front, .cover-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* 背面不可见 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* === 封面正面设计 === */
+        .cover-front {
+            background-color: var(--cover-color);
+            padding: 60px;
+            color: var(--text-main);
+        }
+
+        .cover-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 5rem;
+            line-height: 0.9;
+            font-style: italic;
+            font-weight: 400;
+            margin-top: 40px;
+        }
+
+        .cover-subtitle {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            border-top: 1px solid #000;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .click-hint {
+            font-size: 0.8rem;
+            margin-top: auto;
+            text-align: right;
+            animation: pulse 2s infinite;
+        }
+
+        /* === 封面背面设计 (翻开后变成左页) === */
+        .cover-back {
+            background-color: var(--page-bg);
+            transform: rotateY(180deg); /* 预先旋转，因为它是背面 */
+            padding: 50px;
+            border-right: 1px solid rgba(0,0,0,0.05); /* 中缝阴影 */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 左页装饰：酸性绿的有机形状 */
+        .organic-shape {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background-color: var(--accent-green);
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            top: 20%;
+            left: -10%;
+            filter: blur(40px);
+            opacity: 0.5;
+            animation: morph 8s infinite ease-in-out;
+        }
+
+        .brand-manifesto {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .brand-manifesto h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .brand-manifesto p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        /* === 右页 (登录表单) === */
+        .back-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--page-bg);
+            z-index: 1; /* 在封面之下 */
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* 背景网格纹理 */
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        /* 表单样式 */
+        .login-header {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 0;
+            font-size: 1rem;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            background: transparent;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus { border-bottom-color: #000; }
+        
+        .form-input::placeholder { color: #aaa; }
+
+        .btn-submit {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        /* 动画关键帧 */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes morph {
+            0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            33% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            66% { border-radius: 50% 50% 40% 60% / 50% 40% 60% 50%; }
+        }
+        
+        /* 闪烁消息 */
+        .alert {
+            font-size: 0.8rem;
+            color: #d32f2f;
+            margin-bottom: 15px;
+            background: #ffebee;
+            padding: 10px;
+            border-left: 2px solid #d32f2f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="book-container" id="book">
+        <div class="cover" onclick="toggleBook()">
+            
+            <div class="cover-front">
+                <div class="cover-subtitle">
+                    <span>Est. 2025</span>
+                    <span>Security System</span>
+                </div>
+                <div class="cover-title">
+                    Curiosity<br>is Life.
+                </div>
+                <div class="click-hint">
+                    CLICK TO OPEN →
+                </div>
+            </div>
+
+            <div class="cover-back">
+                <div class="organic-shape"></div>
+                <div class="brand-manifesto">
+                    <h3>Explore</h3>
+                    <p>Curiosity is the engine of progress.</p>
+                    <p>In this security range, we simulate the unknown to understand the dangers. Every click is a discovery.</p>
+                    <p style="margin-top: 40px; font-size: 0.8rem; color: #999;">
+                        SECURE ACCESS v2.0
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="back-page">
+            <h2 class="login-header">Sign In</h2>
+            
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('login') }}" method="post">
+                <div class="form-group">
+                    <input type="text" name="username" class="form-input" placeholder="Username" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="password" class="form-input" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn-submit">ENTER RANGE</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 简单的交互逻辑：点击封面翻书
+        function toggleBook() {
+            const book = document.getElementById('book');
+            book.classList.add('open');
+            
+            // 可选：如果点击的是已经翻开的左页(封面背面)，可以合上书
+            // 但对于登录页，通常希望保持打开状态，所以这里只做打开逻辑
+        }
+
+        let __audioCtx;
+        function __getAudioCtx() {
+            if (!__audioCtx) {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return null;
+                __audioCtx = new Ctx();
+            }
+            if (__audioCtx.state === 'suspended') {
+                __audioCtx.resume().catch(() => {});
+            }
+            return __audioCtx;
+        }
+
+        function playPageFlipSound() {
+            const ctx = __getAudioCtx();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+
+            const bufferSize = Math.floor(ctx.sampleRate * 0.12);
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                const t = i / bufferSize;
+                const env = Math.pow(1 - t, 3);
+                data[i] = (Math.random() * 2 - 1) * env;
+            }
+
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+
+            const hp = ctx.createBiquadFilter();
+            hp.type = 'highpass';
+            hp.frequency.setValueAtTime(700, now);
+
+            const bp = ctx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(2500, now);
+            bp.Q.setValueAtTime(0.8, now);
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+            source.connect(hp);
+            hp.connect(bp);
+            bp.connect(gain);
+            gain.connect(ctx.destination);
+
+            source.start(now);
+            source.stop(now + 0.13);
+        }
+        
+        // 自动聚焦：翻书动画结束后聚焦输入框
+        document.querySelector('.cover').addEventListener('click', function() {
+            playPageFlipSound();
+            setTimeout(() => {
+                document.querySelector('input[name="username"]').focus();
+            }, 800);
+        });
+
+        const submitBtn = document.querySelector('.btn-submit');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                playPageFlipSound();
+            });
+        }
+
+        // 如果有错误消息（例如登录失败重定向回来），自动打开书本
+        window.onload = function() {
+            const hasAlert = document.querySelector('.alert');
+            if (hasAlert) {
+                document.getElementById('book').classList.add('open');
+            }
+        }
+    </script>
+</body>
+</html>

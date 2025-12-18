@@ -1,0 +1,177 @@
+:root{ --st-book:#FF0099; --st-ink:#111111; }
+
+body.staccato-loading{
+  cursor: progress !important;
+}
+
+body.staccato-loading a,
+body.staccato-loading button,
+body.staccato-loading input,
+body.staccato-loading textarea,
+body.staccato-loading select{
+  cursor: progress !important;
+}
+
+#staccato-loader{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10050;
+  cursor: progress;
+  background-color: #CCFF00;
+  color: #111111;
+  opacity: 1;
+  pointer-events: none;
+  animation: stBgCycle 0.58s steps(1, end) infinite;
+  --st-failsafe-ms: 1300ms;
+}
+
+#staccato-loader[data-show="1"]{
+  display:flex;
+  animation: stBgCycle 0.58s steps(1, end) infinite, stFailsafeHide var(--st-failsafe-ms, 1300ms) linear forwards;
+}
+
+@keyframes stFailsafeHide{
+  0% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes stBgCycle{
+  0%   { background-color:#CCFF00; color:#111111; --st-book:#FF0099; }
+  25%  { background-color:#FF0099; color:#ffffff; --st-book:#CCFF00; }
+  50%  { background-color:#00E5FF; color:#111111; --st-book:#FFEA00; }
+  75%  { background-color:#FFEA00; color:#111111; --st-book:#00E5FF; }
+  100% { background-color:#CCFF00; color:#111111; --st-book:#FF0099; }
+}
+
+#staccato-loader.closing{
+  animation: stTvOff 0.20s steps(6, end) forwards;
+}
+
+@keyframes stTvOff{
+  0%{ transform: scaleY(1) scaleX(1); opacity: 1; }
+  65%{ transform: scaleY(0.06) scaleX(1); opacity: 0.85; }
+  100%{ transform: scaleY(0.01) scaleX(0.85); opacity: 0; }
+}
+
+#staccato-loader .flip-book{
+  position: relative;
+  width: 320px;
+  height: 200px;
+  perspective: 900px;
+  transform: translateZ(0);
+}
+
+#staccato-loader .page-static-left,
+#staccato-loader .page-static-right{
+  position: absolute;
+  top: 0;
+  width: 160px;
+  height: 100%;
+  border: 6px solid var(--st-ink);
+  background: var(--st-book);
+}
+
+#staccato-loader .page-static-left{
+  left: 0;
+  border-right: 0;
+  border-radius: 14px 0 0 14px;
+}
+
+#staccato-loader .page-static-right{
+  right: 0;
+  border-left: 0;
+  border-radius: 0 14px 14px 0;
+  background-image: linear-gradient(var(--st-ink) 3px, transparent 3px);
+  background-size: 100% 18px;
+  background-position: 0 10px;
+  mix-blend-mode: multiply;
+}
+
+#staccato-loader .page-flipper{
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 160px;
+  height: 100%;
+  border: 6px solid var(--st-ink);
+  border-left-width: 3px;
+  border-radius: 0 14px 14px 0;
+  background: rgba(255,255,255,0.92);
+  transform-origin: left center;
+  will-change: transform;
+  animation: stPageFlip 0.18s steps(6, end) infinite;
+}
+
+#staccato-loader .page-flipper.f2{ opacity: 0.55; animation-delay: 0.04s; }
+#staccato-loader .page-flipper.f3{ opacity: 0.32; animation-delay: 0.08s; }
+
+@keyframes stPageFlip{
+  0%   { transform: rotateY(0deg); filter: brightness(1.1); }
+  40%  { transform: rotateY(-95deg); filter: brightness(0.75); }
+  100% { transform: rotateY(-180deg); filter: brightness(0.95); }
+}
+
+#staccato-loader .confetti{
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--st-ink);
+  animation: stPop 0.18s steps(4, end) infinite;
+}
+
+#staccato-loader .confetti.c1{ top: -22px; left: 50%; transform: rotate(15deg); }
+#staccato-loader .confetti.c2{ bottom: -22px; right: 18%; transform: rotate(-30deg); animation-delay: 0.06s; }
+#staccato-loader .confetti.c3{ top: 48%; left: -28px; border-radius: 50%; animation-delay: 0.10s; }
+
+@keyframes stPop{
+  0% { transform: scale(0) translate(0,0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: scale(1.55) translate(var(--tx, 20px), var(--ty, -20px)); opacity: 0; }
+}
+
+#staccato-loader .loading-text{
+  margin-top: 34px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  font-weight: 800;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -3px;
+  text-transform: uppercase;
+  color: var(--st-ink);
+  mix-blend-mode: multiply;
+  animation: stTextFlicker 0.18s steps(2, end) infinite;
+}
+
+#staccato-loader .loading-text span{ display:inline-block; }
+
+@keyframes stTextFlicker{
+  0%{ opacity: 1; transform: translateY(0); }
+  100%{ opacity: 0.25; transform: translateY(1px); }
+}
+
+#staccato-loader .progress-bar{
+  position: absolute;
+  bottom: 10%;
+  width: 340px;
+  height: 22px;
+  border: 5px solid var(--st-ink);
+  padding: 3px;
+}
+
+#staccato-loader .progress-fill{
+  width: 0%;
+  height: 100%;
+  background: var(--st-ink);
+  animation: stFillUp 0.9s steps(10, end) infinite;
+}
+
+@keyframes stFillUp{
+  to { width: 100%; }
+}

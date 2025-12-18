@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>目录遍历测试靶场</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .attack-card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .attack-card h3 { color: #a8edea; margin-bottom: 16px; }
+    .payload-example {
+      background: #f8f9fa;
+      border-left: 4px solid #a8edea;
+      padding: 12px;
+      border-radius: 4px;
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .payload-example:hover {
+      background: #e9ecef;
+      transform: translateX(4px);
+    }
+    .result-box {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .result-box.blocked {
+      border-left: 4px solid #ffc107;
+      background: #fff8e1;
+    }
+    .result-box.success {
+      border-left: 4px solid #28a745;
+      background: #f0fff4;
+    }
+    .file-content {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .file-list {
+      list-style: none;
+      padding: 0;
+    }
+    .file-list li {
+      padding: 8px 12px;
+      border-bottom: 1px solid #dee2e6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .file-list li:hover {
+      background: #f8f9fa;
+    }
+    .file-list .bi {
+      margin-right: 8px;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1400px;">
+    <div class="text-center mb-4">
+      <h1 class="text-white mb-2"><i class="bi bi-folder2-open"></i> 目录遍历测试靶场</h1>
+      <p class="text-white-50">测试路径遍历攻击及访问控制防御</p>
+      <span class="badge bg-warning text-dark">🚫 访问控制攻击</span>
+      <span class="badge bg-danger">严重程度: HIGH</span>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="attack-card">
+          <h3><i class="bi bi-file-earmark-text"></i> 文件查看器</h3>
+          <p class="small text-muted">模拟文件下载功能，测试目录遍历漏洞</p>
+          
+          <div class="mb-3">
+            <label class="form-label small">文件路径</label>
+            <input type="text" id="fileInput" class="form-control" placeholder="例如: documents/readme.txt">
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label small">模拟IP地址</label>
+              <input type="text" id="simulatedIp" class="form-control form-control-sm" placeholder="留空使用真实IP">
+              <small class="text-muted">例: 172.16.0.100</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">防御开关</label>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="defenseSwitch" checked>
+                <label class="form-check-label small" for="defenseSwitch">
+                  <span id="defenseSwitchLabel">防御已开启</span>
+                </label>
+              </div>
+              <small class="text-muted">关闭后可查看攻击效果</small>
+            </div>
+          </div>
+          
+          <button id="viewBtn" class="btn btn-primary btn-sm w-100 mb-3">
+            <i class="bi bi-eye"></i> 查看文件
+          </button>
+          
+          <div class="mb-3">
+            <strong class="small">常见路径遍历 Payload:</strong>
+            <div class="payload-example" data-payload="../../../etc/passwd">
+              <strong>Linux密码文件:</strong> ../../../etc/passwd
+            </div>
+            <div class="payload-example" data-payload="../../etc/shadow">
+              <strong>Linux影子文件:</strong> ../../etc/shadow
+            </div>
+            <div class="payload-example" data-payload="../../../windows/system32/config/sam">
+              <strong>Windows SAM:</strong> ../../../windows/system32/config/sam
+            </div>
+            <div class="payload-example" data-payload="....//....//....//etc/passwd">
+              <strong>双重编码:</strong> ....//....//....//etc/passwd
+            </div>
+            <div class="payload-example" data-payload="%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd">
+              <strong>URL编码:</strong> %2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd
+            </div>
+            <div class="payload-example" data-payload="..%2f..%2f..%2fetc%2fpasswd">
+              <strong>混合编码:</strong> ..%2f..%2f..%2fetc%2fpasswd
+            </div>
+            <div class="payload-example" data-payload="/var/log/apache2/access.log">
+              <strong>日志文件:</strong> /var/log/apache2/access.log
+            </div>
+          </div>
+          
+          <div id="fileResult" class="result-box" style="display:none;"></div>
+        </div>
+
+        <div class="attack-card">
+          <h3><i class="bi bi-folder"></i> 允许访问的文件</h3>
+          <p class="small text-muted">点击文件名快速填充</p>
+          <ul class="file-list">
+            <li data-file="documents/readme.txt">
+              <i class="bi bi-file-text"></i> documents/readme.txt
+            </li>
+            <li data-file="documents/guide.pdf">
+              <i class="bi bi-file-pdf"></i> documents/guide.pdf
+            </li>
+            <li data-file="images/logo.png">
+              <i class="bi bi-file-image"></i> images/logo.png
+            </li>
+            <li data-file="public/index.html">
+              <i class="bi bi-file-code"></i> public/index.html
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="attack-card">
+          <h3><i class="bi bi-shield-check"></i> 防御状态监控</h3>
+          <p class="small text-muted">实时显示路径遍历检测和拦截情况</p>
+          
+          <div id="defenseStatus" class="alert alert-info">
+            <strong>防御系统:</strong> <span id="defenseState">等待测试...</span>
+          </div>
+          
+          <div class="mb-3">
+            <strong class="small">攻击检测详情:</strong>
+            <div id="attackDetails" class="mt-2" style="font-size: 13px;">
+              <p class="text-muted">暂无检测记录</p>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <strong class="small">路径遍历攻击类型:</strong>
+            <ul class="small mt-2">
+              <li><strong>相对路径遍历:</strong> ../ 或 ..\</li>
+              <li><strong>绝对路径访问:</strong> /etc/passwd</li>
+              <li><strong>URL编码绕过:</strong> %2e%2e%2f</li>
+              <li><strong>双重编码:</strong> %252e%252e%252f</li>
+              <li><strong>混合编码:</strong> ..%2f</li>
+              <li><strong>Unicode编码:</strong> ..%c0%af</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="attack-card">
+          <h3><i class="bi bi-exclamation-triangle"></i> 敏感文件列表</h3>
+          <div style="font-size: 13px;">
+            <strong>Linux:</strong>
+            <ul class="small">
+              <li>/etc/passwd - 用户账户信息</li>
+              <li>/etc/shadow - 加密密码</li>
+              <li>/etc/hosts - 主机映射</li>
+              <li>/var/log/* - 系统日志</li>
+              <li>~/.ssh/id_rsa - SSH私钥</li>
+            </ul>
+            <strong>Windows:</strong>
+            <ul class="small">
+              <li>C:\Windows\System32\config\SAM</li>
+              <li>C:\boot.ini</li>
+              <li>C:\Windows\win.ini</li>
+              <li>C:\inetpub\wwwroot\web.config</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('attack_hub') }}" class="btn btn-outline-light btn-sm me-2">返回攻击中心</a>
+      <a href="{{ url_for('console') }}" class="btn btn-outline-light btn-sm">控制台</a>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.payload-example').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('fileInput').value = el.dataset.payload;
+      });
+    });
+
+    document.getElementById('defenseSwitch').addEventListener('change', (e) => {
+      const label = document.getElementById('defenseSwitchLabel');
+      if (e.target.checked) {
+        label.textContent = '防御已开启';
+        label.classList.remove('text-danger');
+        label.classList.add('text-success');
+      } else {
+        label.textContent = '防御已关闭';
+        label.classList.remove('text-success');
+        label.classList.add('text-danger');
+      }
+    });
+
+    document.querySelectorAll('.file-list li').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('fileInput').value = el.dataset.file;
+      });
+    });
+
+    document.getElementById('viewBtn').addEventListener('click', async () => {
+      const filepath = document.getElementById('fileInput').value;
+      const defenseEnabled = document.getElementById('defenseSwitch').checked;
+      const simulatedIp = document.getElementById('simulatedIp').value.trim();
+      const resultEl = document.getElementById('fileResult');
+      const statusEl = document.getElementById('defenseStatus');
+      const detailsEl = document.getElementById('attackDetails');
+      const stateEl = document.getElementById('defenseState');
+      
+      if (!filepath) {
+        alert('请输入文件路径');
+        return;
+      }
+      
+      resultEl.style.display = 'block';
+      resultEl.className = 'result-box';
+      resultEl.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div> 读取中...</div>';
+      
+      try {
+        const r = await fetch('/attack/path/view', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            filepath: filepath,
+            defense_enabled: defenseEnabled,
+            simulated_ip: simulatedIp
+          })
+        });
+        
+        const data = await r.json();
+        
+        if (data.blocked) {
+          resultEl.className = 'result-box blocked';
+          statusEl.className = 'alert alert-warning';
+          stateEl.innerHTML = '<i class="bi bi-shield-fill-exclamation"></i> 攻击已拦截';
+          
+          detailsEl.innerHTML = `
+            <div class="alert alert-warning mb-2">
+              <strong>检测到攻击:</strong> ${data.attack_type || '目录遍历'}
+            </div>
+            <div><strong>攻击描述:</strong> ${data.description || '未知'}</div>
+            <div><strong>严重程度:</strong> <span class="badge bg-danger">${data.severity || 'HIGH'}</span></div>
+            <div><strong>攻击分类:</strong> <span class="badge bg-warning">${data.category || '访问控制攻击'}</span></div>
+          `;
+          
+          resultEl.innerHTML = `
+            <div class="alert alert-warning">
+              <i class="bi bi-shield-exclamation"></i> <strong>目录遍历攻击已被拦截！</strong>
+            </div>
+            <p><strong>检测到的攻击模式:</strong> ${data.description}</p>
+            <p class="text-muted small">非法路径访问已被阻止，敏感文件受到保护。</p>
+          `;
+        } else if (data.error) {
+          resultEl.className = 'result-box error';
+          resultEl.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+          resultEl.className = 'result-box success';
+          statusEl.className = 'alert alert-success';
+          stateEl.innerHTML = '<i class="bi bi-check-circle"></i> 文件读取成功';
+          
+          let statusInfo = '';
+          if (!data.defense_enabled) {
+            statusInfo = '<div class="alert alert-danger mb-2"><i class="bi bi-shield-slash"></i> <strong>防御已关闭</strong> - 路径未被拦截（靶场环境）</div>';
+            detailsEl.innerHTML = '<p class="text-warning">⚠️ 防御关闭，文件访问未被限制（仅在靶场内）</p>';
+          } else {
+            detailsEl.innerHTML = '<p class="text-success">✓ 未检测到目录遍历</p>';
+          }
+          
+          if (data.simulated_ip) {
+            statusInfo += `<div class="alert alert-info mb-2"><i class="bi bi-router"></i> 模拟IP: <strong>${data.simulated_ip}</strong></div>`;
+          }
+          
+          resultEl.innerHTML = statusInfo + `
+            <div class="alert alert-success mb-2">文件: ${data.filename}</div>
+            <pre style="background: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 12px; max-height: 300px; overflow-y: auto;">${data.content}</pre>
+          `;
+        }
+      } catch(e) {
+        resultEl.className = 'result-box error';
+        resultEl.innerHTML = `<div class="alert alert-danger">请求失败: ${e.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

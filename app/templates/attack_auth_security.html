@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>认证与会话管理安全测试</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .panel {
+      background: rgba(255,255,255,0.96);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    .mini {
+      font-size: 12px;
+      color: #6c757d;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 8px 14px;
+      font-size: 14px;
+    }
+    .kv b { color: #111; }
+    .events {
+      max-height: 420px;
+      overflow: auto;
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+    }
+    .event-row {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .event-row:last-child { border-bottom: 0; }
+    .event-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .event-meta {
+      font-size: 12px;
+      color: #6c757d;
+    }
+    .event-payload {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: #0b1020;
+      color: #dbeafe;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1200px;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h1 class="text-white mb-1"><i class="bi bi-person-badge"></i> 认证与会话管理安全测试</h1>
+        <div class="text-white-50">暴力破解 / 弱口令 / 会话劫持 防护演示与监控</div>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-light" href="{{ url_for('attack_hub') }}"><i class="bi bi-arrow-left"></i> 返回攻击测试中心</a>
+        <a class="btn btn-outline-light" href="{{ url_for('console') }}"><i class="bi bi-speedometer2"></i> 控制台</a>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="mb-0">状态</h5>
+            <button class="btn btn-sm btn-primary" id="btnRefresh"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+          </div>
+          <div class="kv" id="statusKv"></div>
+          <div class="mini mt-2">提示：开关会持久化（Setting 表），适用于演示。</div>
+        </div>
+
+        <div class="panel">
+          <h5 class="mb-3">功能开关</h5>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="flagAuthSecurity">
+                <label class="form-check-label" for="flagAuthSecurity">总开关</label>
+              </div>
+              <div class="mini">auth_security_enabled</div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="flagBruteforce">
+                <label class="form-check-label" for="flagBruteforce">暴力破解/撞库检测</label>
+              </div>
+              <div class="mini">auth_bruteforce_enabled</div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="flagWeakPwd">
+                <label class="form-check-label" for="flagWeakPwd">弱口令检测</label>
+              </div>
+              <div class="mini">auth_weak_password_enabled</div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="flagSessionGuard">
+                <label class="form-check-label" for="flagSessionGuard">会话劫持防护</label>
+              </div>
+              <div class="mini">auth_session_guard_enabled</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h5 class="mb-3">弱口令检测</h5>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">测试密码</label>
+              <input class="form-control" id="pwdInput" placeholder="例如: admin / Admin123!">
+              <div class="mini mt-1">建议测试：admin、123456、Admin123!、Aa1!aaaa</div>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-dark w-100" id="btnPwdCheck"><i class="bi bi-shield-check"></i> 校验</button>
+            </div>
+          </div>
+          <div class="mt-2" id="pwdCheckResult"></div>
+
+          <hr>
+
+          <h6 class="mb-2">修改密码（触发弱口令拦截）</h6>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">新密码</label>
+              <input class="form-control" id="changePwdInput" placeholder="输入新密码">
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-danger w-100" id="btnChangePwd"><i class="bi bi-key"></i> 提交修改</button>
+            </div>
+          </div>
+          <div class="mini mt-1">需要已登录；弱口令会返回 400 并写入 AttackLog(weak_password)。</div>
+          <div class="mt-2" id="changePwdResult"></div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="mb-0">最近安全事件</h5>
+            <button class="btn btn-sm btn-outline-secondary" id="btnLoadEvents"><i class="bi bi-list"></i> 刷新事件</button>
+          </div>
+          <div class="events" id="eventsBox"></div>
+          <div class="mini mt-2">事件来源：AttackLog 中 brute_force / weak_password / session_hijack。</div>
+        </div>
+
+        <div class="panel">
+          <h5 class="mb-2">暴力破解/撞库演示提示</h5>
+          <div class="mini">直接对 /login 连续输错同一账号密码（默认 2 分钟内 5 次失败）会触发拦截并记录 brute_force 事件。</div>
+          <div class="mini">同一 IP 短时间尝试多个不同 username（默认 3 分钟内 6 个不同账号）也会触发拦截。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function apiGet(url){
+      const r = await fetch(url, { credentials: 'same-origin' });
+      return r;
+    }
+
+    async function apiPost(url, payload){
+      const r = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      });
+      return r;
+    }
+
+    function setKv(obj){
+      const el = document.getElementById('statusKv');
+      if (!el) return;
+      const rows = [];
+      rows.push(`<div><b>client_ip</b></div><div>${obj.client_ip || ''}</div>`);
+      rows.push(`<div><b>enabled</b></div><div>${obj.enabled ? 'ON' : 'OFF'}</div>`);
+      rows.push(`<div><b>bruteforce_enabled</b></div><div>${obj.bruteforce_enabled ? 'ON' : 'OFF'}</div>`);
+      rows.push(`<div><b>weak_password_enabled</b></div><div>${obj.weak_password_enabled ? 'ON' : 'OFF'}</div>`);
+      rows.push(`<div><b>session_guard_enabled</b></div><div>${obj.session_guard_enabled ? 'ON' : 'OFF'}</div>`);
+
+      if (obj.bruteforce) {
+        rows.push(`<div><b>username_fail_threshold</b></div><div>${obj.bruteforce.username_fail_threshold}</div>`);
+        rows.push(`<div><b>username_fail_window_seconds</b></div><div>${obj.bruteforce.username_fail_window_seconds}</div>`);
+        rows.push(`<div><b>ip_distinct_usernames_threshold</b></div><div>${obj.bruteforce.ip_distinct_usernames_threshold}</div>`);
+        rows.push(`<div><b>ip_window_seconds</b></div><div>${obj.bruteforce.ip_window_seconds}</div>`);
+        rows.push(`<div><b>recent_failed_total_in_window</b></div><div>${obj.bruteforce.recent_failed_total_in_window}</div>`);
+        rows.push(`<div><b>recent_distinct_usernames_for_ip</b></div><div>${obj.bruteforce.recent_distinct_usernames_for_ip}</div>`);
+      }
+      el.innerHTML = rows.join('');
+    }
+
+    function setFlags(obj){
+      document.getElementById('flagAuthSecurity').checked = !!obj.enabled;
+      document.getElementById('flagBruteforce').checked = !!obj.bruteforce_enabled;
+      document.getElementById('flagWeakPwd').checked = !!obj.weak_password_enabled;
+      document.getElementById('flagSessionGuard').checked = !!obj.session_guard_enabled;
+    }
+
+    async function refreshStatus(){
+      const r = await apiGet('/api/auth_security/status');
+      const data = await r.json();
+      setKv(data);
+      setFlags(data);
+    }
+
+    async function loadEvents(){
+      const r = await apiGet('/api/auth_security/events?limit=50');
+      const data = await r.json();
+      const box = document.getElementById('eventsBox');
+      if (!box) return;
+      const events = (data && data.events) ? data.events : [];
+      if (!events.length){
+        box.innerHTML = '<div class="p-3 text-muted">暂无事件</div>';
+        return;
+      }
+      box.innerHTML = events.map(e => {
+        const badge = e.type === 'session_hijack' ? 'danger' : (e.type === 'brute_force' ? 'warning' : 'info');
+        const blocked = e.blocked ? '<span class="badge bg-danger">blocked</span>' : '<span class="badge bg-success">allowed</span>';
+        return `
+          <div class="event-row">
+            <div class="event-head">
+              <div>
+                <span class="badge bg-${badge}">${e.type}</span>
+                ${blocked}
+                <span class="ms-2 event-meta">${e.timestamp || ''}</span>
+              </div>
+              <div class="event-meta">${(e.ip || '')}</div>
+            </div>
+            <div class="event-meta">${(e.target_url || '')}</div>
+            <div class="event-payload">${(e.payload || '')}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleFlag(flag, enabled){
+      await apiPost('/api/auth_security/toggle', { flag, enabled });
+      await refreshStatus();
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', async () => {
+      await refreshStatus();
+    });
+    document.getElementById('btnLoadEvents').addEventListener('click', async () => {
+      await loadEvents();
+    });
+
+    document.getElementById('flagAuthSecurity').addEventListener('change', (e) => toggleFlag('auth_security_enabled', e.target.checked));
+    document.getElementById('flagBruteforce').addEventListener('change', (e) => toggleFlag('auth_bruteforce_enabled', e.target.checked));
+    document.getElementById('flagWeakPwd').addEventListener('change', (e) => toggleFlag('auth_weak_password_enabled', e.target.checked));
+    document.getElementById('flagSessionGuard').addEventListener('change', (e) => toggleFlag('auth_session_guard_enabled', e.target.checked));
+
+    document.getElementById('btnPwdCheck').addEventListener('click', async () => {
+      const pwd = document.getElementById('pwdInput').value || '';
+      const r = await apiPost('/api/auth/password_check', { password: pwd });
+      const data = await r.json();
+      const el = document.getElementById('pwdCheckResult');
+      if (!data.ok) {
+        el.innerHTML = `<div class="alert alert-warning" style="margin:0;">弱口令/不满足策略：${(data.reasons || []).join('；')}</div>`;
+      } else {
+        el.innerHTML = `<div class="alert alert-success" style="margin:0;">密码强度通过</div>`;
+      }
+    });
+
+    document.getElementById('btnChangePwd').addEventListener('click', async () => {
+      const pwd = document.getElementById('changePwdInput').value || '';
+      const el = document.getElementById('changePwdResult');
+      const r = await apiPost('/api/auth/change_password', { new_password: pwd });
+      let data;
+      try { data = await r.json(); } catch(e) { data = { ok: false, error: 'bad_response' }; }
+      if (!r.ok || !data.ok) {
+        el.innerHTML = `<div class="alert alert-danger" style="margin:0;">修改失败：${data.error || 'error'}</div>`;
+        return;
+      }
+      el.innerHTML = `<div class="alert alert-success" style="margin:0;">修改成功</div>`;
+    });
+
+    refreshStatus();
+    loadEvents();
+    setInterval(loadEvents, 5000);
+  </script>
+</body>
+</html>
